@@ -1,0 +1,17 @@
+DROP SEQUENCE SeqHid;
+DROP SEQUENCE SeqPid;
+DROP SEQUENCE SeqCid;
+DROP SEQUENCE SeqGid;
+
+DROP TABLE UserTags;
+DROP TABLE PostTags;
+DROP TABLE Chats;
+DROP TABLE PostVisibilities;
+DROP TABLE Posts;
+DROP TABLE ChatGroupMemberships;
+DROP TABLE ChatGroups;
+DROP TABLE Sessions;
+DROP TABLE FriendRequests;
+DROP TABLE Friendships;
+DROP TABLE Users;
+DROP TABLE Settings;
