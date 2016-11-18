@@ -1,15 +1,20 @@
 CREATE TABLE Settings (
-    current_time TIMESTAMP NOT NULL
+    currentTime TIMESTAMP,
+    currentInterval INTERVAL DAY(9) to SECOND(0),
+    clockActive INTEGER NOT NULL
 );
+
+INSERT INTO SETTINGS (currentTime, currentInterval, clockActive)
+    VALUES (SYSTIMESTAMP, INTERVAL '0' SECOND, 1);
 
 CREATE TABLE Users (
     hid INTEGER NOT NULL,
     email CHAR(20) UNIQUE NOT NULL,
     name CHAR(20) NOT NULL,
     phone CHAR(10) NOT NULL,
-    pass_hash CHAR(32) NOT NULL,
-    screenname CHAR(256) NOT NULL,
-    is_manager INTEGER NOT NULL,
+    passwordHash CHAR(64) NOT NULL,
+    screenname CHAR(20) NOT NULL,
+    isManager INTEGER NOT NULL,
     PRIMARY KEY (hid)
 );
 
@@ -31,16 +36,16 @@ CREATE TABLE FriendRequests (
 );
 
 CREATE TABLE Sessions (
-    session_id INTEGER NOT NULL,
-    token CHAR(32) NOT NULL,
+    sid INTEGER NOT NULL,
+    token CHAR(32) NOT NULL UNIQUE,
     hid INTEGER NOT NULL,
-    is_managing INTEGER NOT NULL,
-    PRIMARY KEY (session_id)
+    isManaging INTEGER NOT NULL,
+    PRIMARY KEY (sessionId)
 );
 
 CREATE TABLE ChatGroups (
     gid INTEGER NOT NULL,
-    group_name CHAR(20) NOT NULL,
+    groupName CHAR(20) NOT NULL,
     duration INTEGER NOT NULL,
     PRIMARY KEY (gid)
 );
@@ -48,8 +53,8 @@ CREATE TABLE ChatGroups (
 CREATE TABLE ChatGroupMemberships (
     gid INTEGER NOT NULL,
     hid INTEGER NOT NULL,
-    is_owner INTEGER NOT NULL,
-    invitation_accepted INTEGER NOT NULL,
+    isOwner INTEGER NOT NULL,
+    invitationAccepted INTEGER NOT NULL,
     PRIMARY KEY (gid, hid),
     FOREIGN KEY (gid) REFERENCES ChatGroups(gid),
     FOREIGN KEY (hid) REFERENCES Users(hid)
@@ -60,7 +65,7 @@ CREATE TABLE Posts (
     author INTEGER NOT NULL,
     text VARCHAR(1400) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
-    is_public INTEGER NOT NULL,
+    isPublic INTEGER NOT NULL,
     PRIMARY KEY (pid),
     FOREIGN KEY (author) REFERENCES Users(hid)
 );
@@ -79,8 +84,8 @@ CREATE TABLE Chats (
     timestamp TIMESTAMP NOT NULL,
     hid INTEGER,
     gid INTEGER,
-    deleted_by_sender INTEGER NOT NULL,
-    deleted_by_receiver INTEGER NOT NULL,
+    deletedBySender INTEGER NOT NULL,
+    deletedByReceiver INTEGER NOT NULL,
     PRIMARY KEY (cid),
     FOREIGN KEY (author) REFERENCES Users(hid),
     FOREIGN KEY (gid) REFERENCES ChatGroups(gid)
@@ -88,14 +93,14 @@ CREATE TABLE Chats (
 
 CREATE TABLE PostTags (
     pid INTEGER NOT NULL,
-    tag_text CHAR(200) NOT NULL,
+    tagText CHAR(200) NOT NULL,
     PRIMARY KEY (pid),
     FOREIGN KEY (pid) REFERENCES Posts(pid)
 );
 
 CREATE TABLE UserTags (
     hid INTEGER NOT NULL,
-    tag_text CHAR(200) NOT NULL,
+    tagText CHAR(200) NOT NULL,
     PRIMARY KEY (hid),
     FOREIGN KEY (hid) REFERENCES Users(hid)
 );
@@ -104,3 +109,4 @@ CREATE SEQUENCE SeqHid START WITH 1;
 CREATE SEQUENCE SeqPid START WITH 1;
 CREATE SEQUENCE SeqCid START WITH 1;
 CREATE SEQUENCE SeqGid START WITH 1;
+CREATE SEQUENCE SeqSid START WITH 1;
