@@ -40,7 +40,7 @@ CREATE TABLE Sessions (
     token CHAR(32) NOT NULL UNIQUE,
     hid INTEGER NOT NULL,
     isManaging INTEGER NOT NULL,
-    PRIMARY KEY (sessionId)
+    PRIMARY KEY (sid)
 );
 
 CREATE TABLE ChatGroups (
@@ -94,14 +94,12 @@ CREATE TABLE Chats (
 CREATE TABLE PostTags (
     pid INTEGER NOT NULL,
     tagText CHAR(200) NOT NULL,
-    PRIMARY KEY (pid),
     FOREIGN KEY (pid) REFERENCES Posts(pid)
 );
 
 CREATE TABLE UserTags (
     hid INTEGER NOT NULL,
     tagText CHAR(200) NOT NULL,
-    PRIMARY KEY (hid),
     FOREIGN KEY (hid) REFERENCES Users(hid)
 );
 
@@ -110,3 +108,22 @@ CREATE SEQUENCE SeqPid START WITH 1;
 CREATE SEQUENCE SeqCid START WITH 1;
 CREATE SEQUENCE SeqGid START WITH 1;
 CREATE SEQUENCE SeqSid START WITH 1;
+
+CREATE OR REPLACE FUNCTION getTime
+    RETURN TIMESTAMP
+    AS
+        output TIMESTAMP;
+        currentSettings Settings%ROWTYPE;
+    BEGIN
+        SELECT * INTO currentSettings
+            FROM Settings;
+        IF currentSettings.clockActive = 0 THEN
+            output := currentSettings.currentTime;
+        ELSE
+            output := SYSTIMESTAMP + currentSettings.currentInterval;
+        END IF;
+        RETURN(output);
+    END;
+/
+
+SELECT get_time() from dual;

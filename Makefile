@@ -11,5 +11,8 @@ setup:
 	./scripts/sql ./scripts/teardown.sql
 	./scripts/sql ./scripts/setup.sql
 
+load:
+	java -cp lib/ojdbc6.jar:./bin LoadTest
+
 teardown:
 	./scripts/sql ./scripts/teardown.sql

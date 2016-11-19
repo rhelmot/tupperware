@@ -49,4 +49,12 @@ public class ChatGroupsEntity extends Entity {
     public ArrayList<UsersEntity> getPendingMembers() {
         return Database.i().getChatGroupPendingMembers(this.gid);
     }
+
+    public boolean inviteUser(UsersEntity user) {
+        return Database.i().insertChatGroupMembership(this.gid, user.hid, false, false);
+    }
+
+    public boolean acceptInvitation(UsersEntity user) {
+        return Database.i().updateChatGroupMembership(this.gid, user.hid, false, true);
+    }
 }

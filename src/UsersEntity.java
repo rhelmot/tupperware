@@ -13,10 +13,10 @@ public class UsersEntity extends Entity {
     public boolean isManager;
 
     public static UsersEntity create(
-            String email,
             String name,
-            String phone,
+            String email,
             String password,
+            String phone,
             String screenname,
             boolean isManager) throws DomainError {
         if (email.length() > 20) throw new DomainError("Email too long");
@@ -87,7 +87,7 @@ public class UsersEntity extends Entity {
         return new String(hexhash);
     }
 
-    public boolean checkPassword (String password) {
+    public boolean checkPassword(String password) {
         return this.passwordHash.equals(UsersEntity.hashPassword(password));
     }
 
@@ -130,5 +130,13 @@ public class UsersEntity extends Entity {
 
     public ArrayList<ChatGroupsEntity> getPendingChatGroups() {
         return Database.i().getChatGroupsPendingForUser(this.hid);
+    }
+
+    public boolean addTag(String tagText) {
+        return Database.i().addUserTag(this.hid, tagText);
+    }
+
+    public boolean deleteTag(String tagText) {
+        return Database.i().deleteUserTag(this.hid, tagText);
     }
 }

@@ -1,6 +1,9 @@
 import java.sql.*;
 import java.lang.ThreadLocal;
 import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.util.Date;
 
 public class Database {
     private static ThreadLocal<Database> inst = new ThreadLocal<Database>() {
@@ -11,11 +14,17 @@ public class Database {
     private Connection con;
 
     public Database() {
-        String url = "jdbc:oracle:thin:@uml.cs.ucsb.edu:1521:xe";
-        String username = "dutcher";
-        String password = "096";
         try {
+            Class.forName("oracle.jdbc.driver.OracleDriver");
+            String url = "jdbc:oracle:thin:@uml.cs.ucsb.edu:1521:xe";
+            String username = "dutcher";
+            String password = "096";
+
             this.con = DriverManager.getConnection(url, username, password);
+
+            this.getTimeStmt = con.prepareStatement(Database.getTimeSql);
+            this.setTimeStaticStmt = con.prepareStatement(Database.setTimeStaticSql);
+            this.setTimeDynamicStmt = con.prepareStatement(Database.setTimeDynamicSql);
 
             this.getUserStmt = con.prepareStatement(Database.getUserSql);
             this.insertUserStmt = con.prepareStatement(Database.insertUserSql, new String[]{"hid"});
@@ -25,9 +34,11 @@ public class Database {
             this.areFriendsStmt = con.prepareStatement(Database.areFriendsSql);
             this.requestFriendsStmt = con.prepareStatement(Database.requestFriendsSql);
             this.unrequestFriendsStmt = con.prepareStatement(Database.unrequestFriendsSql);
+
             this.insertSessionStmt = con.prepareStatement(Database.insertSessionSql, new String[]{"sid"});
             this.updateSessionStmt = con.prepareStatement(Database.updateSessionSql);
             this.getSessionStmt = con.prepareStatement(Database.getSessionSql);
+
             this.insertChatGroupStmt = con.prepareStatement(Database.insertChatGroupSql, new String[]{"gid"});
             this.updateChatGroupStmt = con.prepareStatement(Database.updateChatGroupSql);
             this.getChatGroupStmt = con.prepareStatement(Database.getChatGroupSql);
@@ -37,9 +48,28 @@ public class Database {
             this.getChatGroupPendingMembersStmt = con.prepareStatement(Database.getChatGroupPendingMembersSql);
             this.getChatGroupsForUserStmt = con.prepareStatement(Database.getChatGroupsForUserSql);
             this.getChatGroupsPendingForUserStmt = con.prepareStatement(Database.getChatGroupsPendingForUserSql);
-        } catch (SQLException e) {
+
+            this.insertChatStmt = con.prepareStatement(Database.insertChatSql, new String[]{"cid"});
+            this.insertChatForGroupStmt = con.prepareStatement(Database.insertChatForGroupSql);
+            this.deleteChatSenderStmt = con.prepareStatement(Database.deleteChatSenderSql);
+            this.deleteChatReceiverStmt = con.prepareStatement(Database.deleteChatReceiverSql);
+            this.getChatsStmt = con.prepareStatement(Database.getChatsSql);
+            this.getChatsForGroupStmt = con.prepareStatement(Database.getChatsForGroupSql);
+
+            this.insertPostStmt = con.prepareStatement(Database.insertPostSql, new String[]{"pid"});
+            this.updatePostStmt = con.prepareStatement(Database.updatePostSql);
+            this.makePostVisibleStmt = con.prepareStatement(Database.makePostVisibleSql);
+
+            this.getPostsByUserStmt = con.prepareStatement(Database.getPostsByUserSql);
+            this.getPostsByTagStmt = con.prepareStatement(Database.getPostsByTagSql);
+            this.getUsersByTagStmt = con.prepareStatement(Database.getUsersByTagSql);
+            this.addPostTagStmt = con.prepareStatement(Database.addPostTagSql);
+            this.addUserTagStmt = con.prepareStatement(Database.addUserTagSql);
+            this.deletePostTagStmt = con.prepareStatement(Database.deletePostTagSql);
+            this.deleteUserTagStmt = con.prepareStatement(Database.deleteUserTagSql);
+        } catch (Exception e) {
             System.err.println("FATAL: Failed to set up database connection!");
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -56,13 +86,61 @@ public class Database {
         return inst.get();
     }
 
+    private static String getTimeSql = "SELECT getTime() from dual";
+    private PreparedStatement getTimeStmt;
+    public Date getTime() {
+        try {
+            ResultSet rs = this.getTimeStmt.executeQuery();
+            rs.next();
+            return new Date(rs.getTimestamp(1).getTime());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static String setTimeStaticSql = "UPDATE Settings SET currentTime=?, clockActive=0";
+    private PreparedStatement setTimeStaticStmt;
+    public boolean setTimeStatic(Date when) {
+        try {
+            this.setTimeStaticStmt.setTimestamp(1, new Timestamp(when.getTime()));
+            this.setTimeStaticStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String setTimeDynamicSql = "UPDATE Settings SET currentInterval=(? - SYSTIMESTAMP), clockActive=1";
+    private PreparedStatement setTimeDynamicStmt;
+    public boolean setTimeDynamic(Date when) {
+        try {
+            this.setTimeDynamicStmt.setTimestamp(1, new Timestamp(when.getTime()));
+            this.setTimeDynamicStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean setTime(String when, boolean dynamic) throws ParseException {
+        //SimpleDateFormat parser = new SimpleDateFormat("MMMMM d yyyy h:mm:ss a");
+        SimpleDateFormat parser = new SimpleDateFormat("M.d.yyyy, h:mm a");
+        if (dynamic) {
+            return Database.i().setTimeDynamic(parser.parse(when));
+        } else {
+            return Database.i().setTimeStatic(parser.parse(when));
+        }
+    }
+
     private static String getUserSql = "SELECT email, name, phone, passwordHash, screenname, isManager FROM Users WHERE hid=?";
     private PreparedStatement getUserStmt;
     public UsersEntity getUser(int hid) {
         try {
             this.getUserStmt.setInt(1, hid);
-            this.getUserStmt.execute();
-            ResultSet rs = this.getUserStmt.getResultSet();
+            ResultSet rs = this.getUserStmt.executeQuery();
             if (rs.next()) {
                 return new UsersEntity(hid, rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6) != 0);
             } else {
@@ -78,8 +156,7 @@ public class Database {
     public UsersEntity getUserByEmail(String email) {
         try {
             this.getUserStmt.setString(1, email);
-            this.getUserStmt.execute();
-            ResultSet rs = this.getUserStmt.getResultSet();
+            ResultSet rs = this.getUserStmt.executeQuery();
             if (rs.next()) {
                 return new UsersEntity(rs.getInt(1), email, rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6) != 0);
             } else {
@@ -108,7 +185,7 @@ public class Database {
             rs.next();
             return rs.getInt(1);
         } catch (SQLException e) {
-            System.err.println(e);
+            e.printStackTrace();
             return null;
         }
     }
@@ -139,8 +216,7 @@ public class Database {
     public ArrayList<UsersEntity> getFriends(int hid) {
         try {
             this.getFriendsStmt.setInt(1, hid);
-            this.getFriendsStmt.execute();
-            ResultSet rs = this.getFriendsStmt.getResultSet();
+            ResultSet rs = this.getFriendsStmt.executeQuery();
             ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
             while (rs.next()) {
                 out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
@@ -151,7 +227,7 @@ public class Database {
         }
     }
 
-    private static String makeFriendsSql = "INSERT INTO Friendships (left, right, since) VALUES (?, ?, (SELECT currentTime FROM Settings)), (?, ?, (SELECT currentTime FROM Settings))";
+    private static String makeFriendsSql = "INSERT ALL INTO Friendships (left, right, since) VALUES (?, ?, getTime()) INTO Friendships (left, right, since) VALUES (?, ?, getTime()) SELECT * from dual";
     private PreparedStatement makeFriendsStmt;
     public boolean makeFriends(int hid1, int hid2) {
         try {
@@ -162,6 +238,7 @@ public class Database {
             this.makeFriendsStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -172,8 +249,7 @@ public class Database {
         try {
             this.makeFriendsStmt.setInt(1, hid1);
             this.makeFriendsStmt.setInt(2, hid2);
-            this.makeFriendsStmt.execute();
-            ResultSet rs = this.makeFriendsStmt.getResultSet();
+            ResultSet rs = this.makeFriendsStmt.executeQuery();
             return rs.next();
         } catch (SQLException e) {
             return false;
@@ -221,7 +297,7 @@ public class Database {
             rs.next();
             return rs.getInt(1);
         } catch (SQLException e) {
-            System.err.println(e);
+            e.printStackTrace();
             return null;
         }
     }
@@ -249,8 +325,7 @@ public class Database {
     public SessionsEntity getSession(String token) {
         try {
             this.getSessionStmt.setString(1, token);
-            this.getSessionStmt.execute();
-            ResultSet rs = this.getSessionStmt.getResultSet();
+            ResultSet rs = this.getSessionStmt.executeQuery();
             if (rs.next()) {
                 return new SessionsEntity(rs.getInt(1), token, rs.getInt(2), rs.getInt(3) != 0);
             } else {
@@ -272,7 +347,7 @@ public class Database {
             rs.next();
             return rs.getInt(1);
         } catch (SQLException e) {
-            System.err.println(e);
+            e.printStackTrace();
             return null;
         }
     }
@@ -296,8 +371,7 @@ public class Database {
     public ChatGroupsEntity getChatGroup(int gid) {
         try {
             this.getChatGroupStmt.setInt(1, gid);
-            this.getChatGroupStmt.execute();
-            ResultSet rs = this.getChatGroupStmt.getResultSet();
+            ResultSet rs = this.getChatGroupStmt.executeQuery();
             if (rs.next()) {
                 return new ChatGroupsEntity(gid, rs.getString(1), rs.getInt(2));
             } else {
@@ -325,7 +399,7 @@ public class Database {
             this.insertChatGroupMembershipStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println(e);
+            e.printStackTrace();
             return false;
         }
     }
@@ -356,8 +430,7 @@ public class Database {
     public ArrayList<UsersEntity> getChatGroupMembers(int gid) {
         try {
             this.getChatGroupMembersStmt.setInt(1, gid);
-            this.getChatGroupMembersStmt.execute();
-            ResultSet rs = this.getChatGroupMembersStmt.getResultSet();
+            ResultSet rs = this.getChatGroupMembersStmt.executeQuery();
             ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
             while (rs.next()) {
                 out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
@@ -373,8 +446,7 @@ public class Database {
     public ArrayList<UsersEntity> getChatGroupPendingMembers(int gid) {
         try {
             this.getChatGroupMembersStmt.setInt(1, gid);
-            this.getChatGroupMembersStmt.execute();
-            ResultSet rs = this.getChatGroupMembersStmt.getResultSet();
+            ResultSet rs = this.getChatGroupMembersStmt.executeQuery();
             ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
             while (rs.next()) {
                 out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
@@ -390,8 +462,7 @@ public class Database {
     public ArrayList<ChatGroupsEntity> getChatGroupsForUser(int hid) {
         try {
             this.getChatGroupsForUserStmt.setInt(1, hid);
-            this.getChatGroupsForUserStmt.execute();
-            ResultSet rs = this.getChatGroupsForUserStmt.getResultSet();
+            ResultSet rs = this.getChatGroupsForUserStmt.executeQuery();
             ArrayList<ChatGroupsEntity> out = new ArrayList<ChatGroupsEntity>();
             while (rs.next()) {
                 out.add(new ChatGroupsEntity(rs.getInt(1), rs.getString(2), rs.getInt(3)));
@@ -407,8 +478,7 @@ public class Database {
     public ArrayList<ChatGroupsEntity> getChatGroupsPendingForUser(int hid) {
         try {
             this.getChatGroupsPendingForUserStmt.setInt(1, hid);
-            this.getChatGroupsPendingForUserStmt.execute();
-            ResultSet rs = this.getChatGroupsPendingForUserStmt.getResultSet();
+            ResultSet rs = this.getChatGroupsPendingForUserStmt.executeQuery();
             ArrayList<ChatGroupsEntity> out = new ArrayList<ChatGroupsEntity>();
             while (rs.next()) {
                 out.add(new ChatGroupsEntity(rs.getInt(1), rs.getString(2), rs.getInt(3)));
@@ -416,6 +486,287 @@ public class Database {
             return out;
         } catch (SQLException e) {
             return null;
+        }
+    }
+
+    private static String insertChatSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) VALUES (SeqCid.NEXTVAL, ?, ?, getTime(), ?, NULL, 0, 0)";
+    private PreparedStatement insertChatStmt;
+    public Integer insertChat(int author, String text, int hid) {
+        try {
+            this.insertChatStmt.setInt(1, author);
+            this.insertChatStmt.setString(2, text);
+            this.insertChatStmt.setInt(3, hid);
+            this.insertChatStmt.executeUpdate();
+            ResultSet rs = this.insertChatStmt.getGeneratedKeys();
+            rs.next();
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // FUCK these horrible project requirements
+    // FUCK me for not thinking this through
+    // but mostly FUCK sql and java for both being so verbose and bureaucratic and forcing me to jump through a billion hoops to change my mind about any sort of design decision halfway through
+    private static String insertChatForGroupSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) SELECT SeqCid.NEXTVAL, ?, ?, getTime(), hid, ?, 1, 0 FROM ChatGroupMemberships WHERE gid=? AND invitationAccepted!=0";
+    private PreparedStatement insertChatForGroupStmt;
+    public boolean insertChatForGroup(int author, String text, int gid) {
+        try {
+            this.insertChatForGroupStmt.setInt(1, author);
+            this.insertChatForGroupStmt.setString(2, text);
+            this.insertChatForGroupStmt.setInt(3, gid);
+            this.insertChatForGroupStmt.setInt(4, gid);
+            this.insertChatForGroupStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String deleteChatSenderSql = "UPDATE Chats SET deletedBySender=1 WHERE cid=?)";
+    private PreparedStatement deleteChatSenderStmt;
+    public boolean deleteChatSender(int cid) {
+        try {
+            this.deleteChatSenderStmt.setInt(1, cid);
+            this.deleteChatSenderStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private static String deleteChatReceiverSql = "UPDATE Chats SET deletedByReceiver=1 WHERE cid=?)";
+    private PreparedStatement deleteChatReceiverStmt;
+    public boolean deleteChatReceiver(int cid) {
+        try {
+            this.deleteChatReceiverStmt.setInt(1, cid);
+            this.deleteChatReceiverStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private static String getChatsSql = "SELECT cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver FROM Chats WHERE ((author=? AND hid=? AND deletedBySender=0) OR (author=? AND hid=? AND deletedByReceiver=0)) AND cid<? ORDER BY timetstamp DESC";
+    private PreparedStatement getChatsStmt;
+    public ArrayList<ChatsEntity> getChats(int me, int other, int index, int count) {
+        try {
+            this.getChatsStmt.setInt(1, me);
+            this.getChatsStmt.setInt(2, other);
+            this.getChatsStmt.setInt(3, me);
+            this.getChatsStmt.setInt(4, me);
+            this.getChatsStmt.setInt(5, index);
+            ResultSet rs = this.getChatsStmt.executeQuery();
+            ArrayList<ChatsEntity> out = new ArrayList<ChatsEntity>();
+
+            while (rs.next() && count > 0) {
+                out.add(new ChatsEntity(rs.getInt(1), rs.getInt(2), rs.getString(3), new Date(rs.getTimestamp(4).getTime()), rs.getInt(5) == 0 ? null : rs.getInt(5), rs.getInt(6) == 0 ? null : rs.getInt(6), rs.getInt(7) != 0, rs.getInt(8) != 0));
+                count--;
+            }
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static String getChatsForGroupSql = "SELECT cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver FROM Chats WHERE hid=? AND gid=? AND deletedByReceiver=0 AND cid<? ORDER BY timestamp DESC";
+    private PreparedStatement getChatsForGroupStmt;
+    public ArrayList<ChatsEntity> getChatsForGroup(int me, int group, int index, int count) {
+        try {
+            this.getChatsForGroupStmt.setInt(1, me);
+            this.getChatsForGroupStmt.setInt(2, group);
+            this.getChatsForGroupStmt.setInt(3, index);
+            ResultSet rs = this.getChatsForGroupStmt.executeQuery();
+            ArrayList<ChatsEntity> out = new ArrayList<ChatsEntity>();
+
+            while (rs.next() && count > 0) {
+                out.add(new ChatsEntity(rs.getInt(1), rs.getInt(2), rs.getString(3), new Date(rs.getTimestamp(4).getTime()), rs.getInt(5) == 0 ? null : rs.getInt(5), rs.getInt(6) == 0 ? null : rs.getInt(6), rs.getInt(7) != 0, rs.getInt(8) != 0));
+                count--;
+            }
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static String insertPostSql = "INSERT INTO Posts (pid, author, text, timestamp, isPublic) VALUES (SeqPid.NEXTVAL, ?, ?, getTime(), ?)";
+    private PreparedStatement insertPostStmt;
+    public Integer insertPost(int author, String text, boolean isPublic) {
+        try {
+            int isPublicInt = 0;
+            if (isPublic) isPublicInt = 1;
+
+            this.insertPostStmt.setInt(1, author);
+            this.insertPostStmt.setString(2, text);
+            this.insertPostStmt.setInt(3, isPublicInt);
+            this.insertPostStmt.executeUpdate();
+            ResultSet rs = this.insertPostStmt.getGeneratedKeys();
+            rs.next();
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static String updatePostSql = "UPDATE Posts author=?, text=?, isPublic=? where pid=?";
+    private PreparedStatement updatePostStmt;
+    public boolean updatePost(int pid, int author, String text, boolean isPublic) {
+        try {
+            int isPublicInt = 0;
+            if (isPublic) isPublicInt = 1;
+
+            this.updatePostStmt.setInt(1, author);
+            this.updatePostStmt.setString(2, text);
+            this.updatePostStmt.setInt(3, isPublicInt);
+            this.updatePostStmt.setInt(4, pid);
+            this.updatePostStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String makePostVisibleSql = "INSERT INTO PostVisibilities (pid, hid) VALUES (?, ?)";
+    private PreparedStatement makePostVisibleStmt;
+    public boolean makePostVisible(int pid, Integer hid) {
+        try {
+            this.makePostVisibleStmt.setInt(1, pid);
+            if (hid == null) {
+                this.makePostVisibleStmt.setNull(2, Types.INTEGER);
+            } else {
+                this.makePostVisibleStmt.setInt(2, hid);
+            }
+            this.makePostVisibleStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String getPostsByUserSql = "SELECT pid, author, text, timestamp, isPublic FROM Posts JOIN PostVisibilities ON PostVisibilities.pid=Posts.pid WHERE hid=? (OR hid is NULL OR (isPublic!=0 AND ?)) AND pid<?";
+    private PreparedStatement getPostsByUserStmt;
+    public ArrayList<PostsEntity> getPostsByUser(int hid, boolean includePublic, int index, int count) {
+        try {
+            this.getPostsByUserStmt.setInt(1, hid);
+            this.getPostsByUserStmt.setBoolean(2, includePublic);
+            this.getPostsByUserStmt.setInt(3, index);
+            ResultSet rs = this.getPostsByUserStmt.executeQuery();
+
+            ArrayList<PostsEntity> out = new ArrayList<PostsEntity>();
+            while (rs.next() && count > 0) {
+                out.add(new PostsEntity(rs.getInt(1), rs.getInt(2), rs.getString(3), new Date(rs.getTimestamp(4).getTime()), rs.getInt(5) != 0));
+                count--;
+            }
+
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static String getPostsByTagSql = "SELECT pid, author, text, timestamp, isPublic FROM Posts JOIN PostTags ON PostTags.pid=Posts.pid WHERE tagText=? AND pid<?";
+    private PreparedStatement getPostsByTagStmt;
+    public ArrayList<PostsEntity> getPostsByTag(String tagText, int index, int count) {
+        try {
+            this.getPostsByTagStmt.setString(1, tagText);
+            this.getPostsByTagStmt.setInt(2, index);
+            ResultSet rs = this.getPostsByTagStmt.executeQuery();
+
+            ArrayList<PostsEntity> out = new ArrayList<PostsEntity>();
+            while (rs.next() && count > 0) {
+                out.add(new PostsEntity(rs.getInt(1), rs.getInt(2), rs.getString(3), new Date(rs.getTimestamp(4).getTime()), rs.getInt(5) != 0));
+                count--;
+            }
+
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static String getUsersByTagSql = "SELECT hid, email, name, phone, passwordHash, screenname, isManager FROM Users JOIN UserTags ON UserTags.hid=Users.hid WHERE tagText=? AND hid<?";
+    private PreparedStatement getUsersByTagStmt;
+    public ArrayList<UsersEntity> getUsersByTag(String tagText, int index, int count) {
+        try {
+            this.getUsersByTagStmt.setString(1, tagText);
+            this.getUsersByTagStmt.setInt(2, index);
+            ResultSet rs = this.getUsersByTagStmt.executeQuery();
+
+            ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
+            while (rs.next() && count > 0) {
+                out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
+                count--;
+            }
+
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static String addPostTagSql = "INSERT INTO PostTags (pid, tagText) VALUES (?, ?)";
+    private PreparedStatement addPostTagStmt;
+    public boolean addPostTag(int pid, String tagText) {
+        try {
+            this.addPostTagStmt.setInt(1, pid);
+            this.addPostTagStmt.setString(2, tagText);
+            this.addPostTagStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String addUserTagSql = "INSERT INTO UserTags (hid, tagText) VALUES (?, ?)";
+    private PreparedStatement addUserTagStmt;
+    public boolean addUserTag(int hid, String tagText) {
+        try {
+            this.addUserTagStmt.setInt(1, hid);
+            this.addUserTagStmt.setString(2, tagText);
+            this.addUserTagStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String deletePostTagSql = "DELETE FROM PostTags WHERE pid=? AND tagText=?";
+    private PreparedStatement deletePostTagStmt;
+    public boolean deletePostTag(int pid, String tagText) {
+        try {
+            this.deletePostTagStmt.setInt(1, pid);
+            this.deletePostTagStmt.setString(2, tagText);
+            this.deletePostTagStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String deleteUserTagSql = "DEELTE FROM UserTags WHERE hid=? AND tagText=?";
+    private PreparedStatement deleteUserTagStmt;
+    public boolean deleteUserTag(int hid, String tagText) {
+        try {
+            this.deleteUserTagStmt.setInt(1, hid);
+            this.deleteUserTagStmt.setString(2, tagText);
+            this.deleteUserTagStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }
