@@ -95,6 +95,10 @@ public class UsersEntity extends Entity {
         return Database.i().getUser(id);
     }
 
+    public static UsersEntity getByEmail(String email) {
+        return Database.i().getUserByEmail(email);
+    }
+
     public boolean save() {
         if (this.hid == null) {
             this.hid = Database.i().insertUser(this.email, this.name, this.phone, this.passwordHash, this.screenname, this.isManager);

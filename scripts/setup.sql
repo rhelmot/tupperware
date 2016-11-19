@@ -9,11 +9,11 @@ INSERT INTO SETTINGS (currentTime, currentInterval, clockActive)
 
 CREATE TABLE Users (
     hid INTEGER NOT NULL,
-    email CHAR(20) UNIQUE NOT NULL,
-    name CHAR(20) NOT NULL,
+    email VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(20) NOT NULL,
     phone CHAR(10) NOT NULL,
     passwordHash CHAR(64) NOT NULL,
-    screenname CHAR(20) NOT NULL,
+    screenname VARCHAR(20) NOT NULL,
     isManager INTEGER NOT NULL,
     PRIMARY KEY (hid)
 );
@@ -45,7 +45,7 @@ CREATE TABLE Sessions (
 
 CREATE TABLE ChatGroups (
     gid INTEGER NOT NULL,
-    groupName CHAR(20) NOT NULL,
+    groupName VARCHAR(20) NOT NULL,
     duration INTEGER NOT NULL,
     PRIMARY KEY (gid)
 );
@@ -93,13 +93,13 @@ CREATE TABLE Chats (
 
 CREATE TABLE PostTags (
     pid INTEGER NOT NULL,
-    tagText CHAR(200) NOT NULL,
+    tagText VARCHAR(200) NOT NULL,
     FOREIGN KEY (pid) REFERENCES Posts(pid)
 );
 
 CREATE TABLE UserTags (
     hid INTEGER NOT NULL,
-    tagText CHAR(200) NOT NULL,
+    tagText VARCHAR(200) NOT NULL,
     FOREIGN KEY (hid) REFERENCES Users(hid)
 );
 

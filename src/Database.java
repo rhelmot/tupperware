@@ -27,6 +27,7 @@ public class Database {
             this.setTimeDynamicStmt = con.prepareStatement(Database.setTimeDynamicSql);
 
             this.getUserStmt = con.prepareStatement(Database.getUserSql);
+            this.getUserByEmailStmt = con.prepareStatement(Database.getUserByEmailSql);
             this.insertUserStmt = con.prepareStatement(Database.insertUserSql, new String[]{"hid"});
             this.updateUserStmt = con.prepareStatement(Database.updateUserSql);
             this.getFriendsStmt = con.prepareStatement(Database.getFriendsSql);
@@ -147,6 +148,7 @@ public class Database {
                 return null;
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -155,14 +157,15 @@ public class Database {
     private PreparedStatement getUserByEmailStmt;
     public UsersEntity getUserByEmail(String email) {
         try {
-            this.getUserStmt.setString(1, email);
-            ResultSet rs = this.getUserStmt.executeQuery();
+            this.getUserByEmailStmt.setString(1, email);
+            ResultSet rs = this.getUserByEmailStmt.executeQuery();
             if (rs.next()) {
                 return new UsersEntity(rs.getInt(1), email, rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6) != 0);
             } else {
                 return null;
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -207,6 +210,7 @@ public class Database {
             this.updateUserStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -223,6 +227,7 @@ public class Database {
             }
             return out;
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -252,6 +257,7 @@ public class Database {
             ResultSet rs = this.makeFriendsStmt.executeQuery();
             return rs.next();
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -265,6 +271,7 @@ public class Database {
             this.makeFriendsStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -278,6 +285,7 @@ public class Database {
             this.makeFriendsStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -316,6 +324,7 @@ public class Database {
             this.updateSessionStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -332,6 +341,7 @@ public class Database {
                 return null;
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -362,6 +372,7 @@ public class Database {
             this.updateChatGroupStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -378,6 +389,7 @@ public class Database {
                 return null;
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -421,6 +433,7 @@ public class Database {
             this.updateChatGroupMembershipStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -437,6 +450,7 @@ public class Database {
             }
             return out;
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -453,11 +467,12 @@ public class Database {
             }
             return out;
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
 
-    private static String getChatGroupsForUserSql = "SELECT gid, groupName, duration FROM ChatGroups JOIN ChatGroupMemberships ON ChatGroups.gid = ChatGroupMemberships.gid WHERE ChatGroupMemberships.hid=? AND invitationAccepted != 0";
+    private static String getChatGroupsForUserSql = "SELECT ChatGroups.gid, groupName, duration FROM ChatGroups JOIN ChatGroupMemberships ON ChatGroups.gid = ChatGroupMemberships.gid WHERE ChatGroupMemberships.hid=? AND invitationAccepted != 0";
     private PreparedStatement getChatGroupsForUserStmt;
     public ArrayList<ChatGroupsEntity> getChatGroupsForUser(int hid) {
         try {
@@ -469,6 +484,7 @@ public class Database {
             }
             return out;
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -485,6 +501,7 @@ public class Database {
             }
             return out;
         } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -533,6 +550,7 @@ public class Database {
             this.deleteChatSenderStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -545,6 +563,7 @@ public class Database {
             this.deleteChatReceiverStmt.executeUpdate();
             return true;
         } catch (SQLException e) {
+            e.printStackTrace();
             return false;
         }
     }
