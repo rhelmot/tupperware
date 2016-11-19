@@ -44,4 +44,8 @@ public class SessionsEntity extends Entity {
         }
         return this.user;
     }
+
+    public static SessionsEntity lookup(String token) {
+        return Database.i().getSession(token);
+    }
 }
