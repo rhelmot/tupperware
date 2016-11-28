@@ -143,4 +143,18 @@ public class UsersEntity extends Entity {
     public boolean deleteTag(String tagText) {
         return Database.i().deleteUserTag(this.hid, tagText);
     }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof UsersEntity) {
+            return ((UsersEntity)other).hid == hid;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return 97653 + 371 * hid;
+    }
 }
