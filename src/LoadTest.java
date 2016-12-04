@@ -55,9 +55,9 @@ public class LoadTest {
             ChatsEntity.create(Peter, "We are gonna building ships and sail to Westeros.", Emilia);
 
             ChatGroupsEntity Thunder = ChatGroupsEntity.create("Thunder Big3", 7, Kevin);
-            Thunder.inviteUser(Russell);
+            Thunder.inviteUser(Russell, Kevin);
             Thunder.acceptInvitation(Russell);
-            Thunder.inviteUser(James);
+            Thunder.inviteUser(James, Kevin);
             Thunder.acceptInvitation(James);
             Database.setTime("11.1.2015, 5:00 PM", false);
             ChatsEntity.create(Kevin, "We are moving forward.", Thunder);
@@ -69,11 +69,11 @@ public class LoadTest {
             ChatsEntity.create(Kevin, "LOL. Hope to see u in western finals.", Thunder);
 
             ChatGroupsEntity Game = ChatGroupsEntity.create("Game of Thrones", 7, Emilia);
-            Game.inviteUser(Peter);
+            Game.inviteUser(Peter, Emilia);
             Game.acceptInvitation(Peter);
-            Game.inviteUser(Kit);
+            Game.inviteUser(Kit, Emilia);
             Game.acceptInvitation(Kit);
-            Game.inviteUser(Lena);
+            Game.inviteUser(Lena, Emilia);
             Game.acceptInvitation(Lena);
             Database.setTime("11.3.2016, 9:00 AM", false);
             ChatsEntity.create(Emilia, "Do you guys see my dragons?", Game);
@@ -87,11 +87,11 @@ public class LoadTest {
             ChatsEntity.create(Peter, "All right...", Game);
 
             ChatGroupsEntity CEOs = ChatGroupsEntity.create("CEOs", 7, Tim);
-            CEOs.inviteUser(Jeff);
+            CEOs.inviteUser(Jeff, Tim);
             CEOs.acceptInvitation(Jeff);
-            CEOs.inviteUser(Larry);
+            CEOs.inviteUser(Larry, Tim);
             CEOs.acceptInvitation(Larry);
-            CEOs.inviteUser(Elon);
+            CEOs.inviteUser(Elon, Tim);
             CEOs.acceptInvitation(Elon);
             Database.setTime("11.10.2016, 10:01 AM", false);
             ChatsEntity.create(Tim, "There will be no discount on Macbook Pro!", CEOs);
@@ -167,6 +167,9 @@ public class LoadTest {
             Elon.addTag("OpenAI");
             Jeff.addTag("Amzon");
             Jeff.addTag("CEO");
+
+            Database.setTime("11.14.2016, 12:00 AM", false);
+            ReportsEntity.generate().save();
 
         } catch (DomainError e) {
             e.printStackTrace();

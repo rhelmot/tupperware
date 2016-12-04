@@ -38,6 +38,8 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
     private Character mask;
     private Pattern validationPattern;
 
+    private final List<Runnable> onTopHandlers;
+
     /**
      * Default constructor, this creates a single-line {@code TextBox} of size 10 which is initially empty
      */
@@ -106,6 +108,7 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
         this.maxLineLength = -1;
         this.mask = null;
         this.validationPattern = null;
+        this.onTopHandlers = new ArrayList<Runnable>();
         setText(initialContent);
 
         setPreferredSize(preferredSize);
@@ -158,13 +161,17 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
      * @return Itself
      */
     public synchronized WordWrapTextBox addLine(String line) {
+        return addLine(line, lines.size());
+    }
+
+    public synchronized WordWrapTextBox addLine(String line, int index) {
         StringBuilder bob = new StringBuilder();
         for(int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
             if(c == '\n' && style == Style.MULTI_LINE) {
                 String string = bob.toString();
-                lines.add(string);
-                addLine(line.substring(i + 1));
+                lines.add(index, string);
+                addLine(line.substring(i + 1), index + 1);
                 return this;
             }
             else if(Character.isISOControl(c)) {
@@ -177,8 +184,18 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
         if(!validated(string)) {
             throw new IllegalStateException("TextBox validation pattern " + validationPattern + " does not match the supplied text");
         }
-        lines.add(string);
+        lines.add(index, string);
         invalidate();
+        return this;
+    }
+
+    public synchronized WordWrapTextBox setLine(String line, int index) {
+        lines.set(index, line);
+        return this;
+    }
+
+    public synchronized WordWrapTextBox removeLine(int index) {
+        lines.remove(index);
         return this;
     }
 
@@ -345,6 +362,7 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
                     return Result.MOVE_FOCUS_UP;
                 }
                 getRenderer().moveUp(this);
+                fireOnTop();
                 return Result.HANDLED;
             case ArrowDown:
                 if(getRenderer().isAtBottom(this) && verticalFocusSwitching) {
@@ -354,6 +372,7 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
                 return Result.HANDLED;
             case Home:
                 getRenderer().moveToTop(this);
+                fireOnTop();
                 return Result.HANDLED;
             case End:
                 getRenderer().moveToBottom(this);
@@ -363,6 +382,7 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
                 return Result.HANDLED;
             case PageUp:
                 getRenderer().movePageUp(this);
+                fireOnTop();
                 return Result.HANDLED;
             default:
         }
@@ -377,12 +397,50 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
         getRenderer().moveToBottom(this);
     }
 
+    private boolean pendingMoveToBottom;
+    public void pendingMoveToBottom() {
+        this.pendingMoveToBottom = true;
+    }
+
+    @Override
+    public void onBeforeDrawing() {
+        super.onBeforeDrawing();
+        if (pendingMoveToBottom) {
+            moveToBottom();
+            pendingMoveToBottom = false;
+        }
+    }
+
+    public void moveToLine(int line) {
+        getRenderer().moveToLine(line);
+    }
+
     public int totalLineHeight() {
         return getWrappedLines().size();
     }
 
     public List<String> getWrappedLines() {
         return TerminalTextUtils.getWordWrappedText(getSize().getColumns() - 1, lines.toArray(new String[lines.size()]));
+    }
+
+    public WordWrapTextBox addTopListener(Runnable r) {
+        if (r != null && !onTopHandlers.contains(r)) {
+            onTopHandlers.add(r);
+        }
+        return this;
+    }
+
+    public WordWrapTextBox removeTopListener(Runnable r) {
+        onTopHandlers.remove(r);
+        return this;
+    }
+
+    private void fireOnTop() {
+        if (getRenderer().isAtTop(this)) {
+            for (Runnable r : onTopHandlers) {
+                r.run();
+            }
+        }
     }
 
     /**
@@ -397,6 +455,7 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
         public boolean isAtTop(WordWrapTextBox component);
         public boolean isAtBottom(WordWrapTextBox component);
 
+        public void moveToLine(int line);
         public void moveToTop(WordWrapTextBox component);
         public void moveToBottom(WordWrapTextBox component);
         public void moveUp(WordWrapTextBox component);
@@ -443,6 +502,11 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
 
         private int heightOfLine(String line, int width) {
             return TerminalTextUtils.getWordWrappedText(width, line).size();
+        }
+
+        public void moveToLine(int line) {
+            viewTopLine = line;
+            viewTopLineOffset = 0;
         }
 
         public boolean isAtTop(WordWrapTextBox component) {
@@ -550,7 +614,7 @@ public class WordWrapTextBox extends AbstractInteractableComponent<WordWrapTextB
             for (String line : component.lines) {
                 max = line.length() > max ? line.length() : max;
             }
-            TerminalSize out = new TerminalSize(max, component.totalLineHeight());
+            TerminalSize out = new TerminalSize(max + 1, component.totalLineHeight());
             return out;
         }
 

@@ -1,3 +1,4 @@
+import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.TerminalSize;
 
 public abstract class ParametrizedWindow extends DynamicWindow {
@@ -19,5 +20,11 @@ public abstract class ParametrizedWindow extends DynamicWindow {
     public ParametrizedWindow(Tupperware parent, String title, boolean isManaged, TerminalSize startSize) {
         super(title, isManaged, startSize);
         root = parent;
+    }
+
+    @Override
+    public void close() {
+        root.removeWindow(this);
+        super.close();
     }
 }

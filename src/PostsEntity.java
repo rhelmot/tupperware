@@ -29,11 +29,21 @@ public class PostsEntity extends Entity {
         for (String tag : tags) {
             if (tag.length() > 200) {
                 throw new DomainError("Post tags must be at most 200 chars");
+            } else if (tag.length() == 0) {
+                if (tags.length == 1) {
+                    throw new DomainError("Must provide at least one tag");
+                } else {
+                    throw new DomainError("Post tags must be longer than zero characters");
+                }
             }
         }
 
         PostsEntity out = new PostsEntity(null, author.hid, text, Database.i().getTime(), true);
         if (out.save()) {
+            if (!Database.i().makePostVisible(out.pid, null)) {
+                // ???
+                return null;
+            }
             for (String tag : tags) {
                 if (!out.addTag(tag)) {
                     // ???
@@ -51,30 +61,44 @@ public class PostsEntity extends Entity {
             throw new DomainError("Post text must be at most 1400 chars");
         }
 
+        for (String tag : tags) {
+            if (tag.length() > 200) {
+                throw new DomainError("Post tags must be at most 200 chars");
+            } else if (tag.length() == 0) {
+                if (tags.length == 1) {
+                    throw new DomainError("Must provide at least one tag");
+                } else {
+                    throw new DomainError("Post tags must be longer than zero characters");
+                }
+            }
+        }
+
         PostsEntity out = new PostsEntity(null, author.hid, text, Database.i().getTime(), true);
         if (out.save()) {
             if (audience == null) {
-                if (Database.i().makePostVisible(out.pid, null)) {
-                    return out;
-                } else {
+                if (!Database.i().makePostVisible(out.pid, null)) {
                     // ???
                     return null;
                 }
             } else {
-                for (String tag : tags) {
-                    if (!out.addTag(tag)) {
-                        // ???
-                        return null;
-                    }
-                }
                 for (UsersEntity viewer : audience) {
                     if (!Database.i().makePostVisible(out.pid, viewer.hid)) {
                         // ???
                         return null;
                     }
                 }
-                return out;
+                if (!Database.i().makePostVisible(out.pid, author.hid)) {
+                    // ...
+                    return null;
+                }
             }
+            for (String tag : tags) {
+                if (!out.addTag(tag)) {
+                    // ???
+                    return null;
+                }
+            }
+            return out;
         } else {
             return null;
         }
@@ -89,12 +113,20 @@ public class PostsEntity extends Entity {
         }
     }
 
+    public static ArrayList<PostsEntity> loadUserPosts(UsersEntity me, UsersEntity target, boolean includePublic, PostsEntity last, int count) {
+        return Database.i().getPostsByUser(me.hid, target.hid, includePublic, last == null ? 999999999 : last.pid, count);
+    }
+
     public static ArrayList<PostsEntity> loadMyCircle(UsersEntity me, boolean includePublic, PostsEntity last, int count) {
-        return Database.i().getPostsByUser(me.hid, includePublic, last == null ? 999999999 : last.pid, count);
+        return Database.i().getPostsByCircle(me.hid, includePublic, last == null ? 999999999 : last.pid, count);
     }
 
     public static ArrayList<PostsEntity> searchTag(String tag, PostsEntity last, int count) {
         return Database.i().getPostsByTag(tag, last == null ? 999999999 : last.pid, count);
+    }
+
+    public static ArrayList<PostsEntity> tagSearch(String[] tagsAnd, String[] tagsOr, PostsEntity last, int count) {
+        return Database.i().searchPosts(tagsAnd, tagsOr, last == null ? 999999999 : last.pid, count);
     }
 
     public boolean addTag(String tagText) {
@@ -103,5 +135,17 @@ public class PostsEntity extends Entity {
 
     public boolean deleteTag(String tagText) {
         return Database.i().deletePostTag(this.pid, tagText);
+    }
+
+    public boolean delete() {
+        return Database.i().deletePost(this.pid);
+    }
+
+    public ArrayList<String> getTags() {
+        return Database.i().getPostTags(this.pid);
+    }
+
+    public UsersEntity getAuthor() {
+        return Database.i().getUser(this.author);
     }
 }

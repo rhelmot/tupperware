@@ -38,6 +38,15 @@ public class SessionsEntity extends Entity {
         }
     }
 
+    public boolean delete() {
+        if (Database.i().deleteSession(this.sid)) {
+            this.sid = null;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public UsersEntity getUser() {
         if (this.user == null) {
             this.user = Database.i().getUser(this.hid);

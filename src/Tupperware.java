@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
+import java.util.HashSet;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -26,30 +27,34 @@ import java.io.PrintWriter;
 
 public class Tupperware {
     public static void main(String[] args) throws IOException {
-        Tupperware t = new Tupperware();
+        try {
+            Tupperware t = new Tupperware();
 
-        String token = Tupperware.readToken();
-        if (token != null) {
-            SessionsEntity s = SessionsEntity.lookup(token);
-            if (s != null) {
-                t.currentSession = s;
-                t.currentUser = s.getUser();
+            String token = Tupperware.readToken();
+            if (token != null) {
+                SessionsEntity s = SessionsEntity.lookup(token);
+                if (s != null) {
+                    t.currentSession = s;
+                    t.currentUser = s.getUser();
+                }
             }
-        }
 
-        if (t.currentSession == null) {
-            t.welcome();
-        }
+            if (t.currentSession == null) {
+                t.welcome();
+            }
 
-        if (t.currentSession != null) {
-            Tupperware.writeToken(t.currentSession.token);
-            t.mainMenu();
+            if (t.currentSession != null) {
+                Tupperware.writeToken(t.currentSession.token);
+                t.mainMenu();
+            }
+        } finally {
+            Database.cleanup();
         }
     }
 
     private Terminal terminal;
     private Screen screen;
-    private MultiWindowTextGUI gui;
+    public MultiWindowTextGUI gui;
 
     private ArrayList<ParametrizedWindow> activeWindows = new ArrayList<ParametrizedWindow>();
 
@@ -76,7 +81,7 @@ public class Tupperware {
     }
 
     private void welcome() {
-        BasicWindow window = new BasicWindow();
+        final BasicWindow window = new BasicWindow();
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
 
         Panel panel = new Panel();
@@ -107,37 +112,40 @@ public class Tupperware {
     }
 
     private void register() {
-        BasicWindow window = new BasicWindow();
+        final BasicWindow window = new BasicWindow();
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
 
-        Panel panel = new Panel();
+        final Panel panel = new Panel();
         panel.setLayoutManager(new GridLayout(2));
 
         new Label("Name").addTo(panel);
-        TextBox nameBox = new TextBox(new TerminalSize(21, 1))
+        final TextBox nameBox = new TextBox(new TerminalSize(21, 1))
             .setValidationPattern(Pattern.compile(".{0,20}"))
             .addTo(panel);
         new Label("Email").addTo(panel);
-        TextBox emailBox = new TextBox(new TerminalSize(21, 1))
+        final TextBox emailBox = new TextBox(new TerminalSize(21, 1))
             .setValidationPattern(Pattern.compile(".{0,20}"))
             .addTo(panel);
         new Label("Password").addTo(panel);
-        TextBox passwordBox = new TextBox(new TerminalSize(21, 1))
+        final TextBox passwordBox = new TextBox(new TerminalSize(21, 1))
             .setMask('*')
             .setValidationPattern(Pattern.compile(".{0,10}"))
             .addTo(panel);
         new Label("Confirm Password").addTo(panel);
-        TextBox password2Box = new TextBox(new TerminalSize(21, 1))
+        final TextBox password2Box = new TextBox(new TerminalSize(21, 1))
             .setMask('*')
             .setValidationPattern(Pattern.compile(".{0,10}"))
             .addTo(panel);
         new Label("Phone #").addTo(panel);
-        TextBox phoneBox = new TextBox(new TerminalSize(21, 1))
+        final TextBox phoneBox = new TextBox(new TerminalSize(21, 1))
             .setValidationPattern(Pattern.compile("[0-9]{0,10}"))
             .addTo(panel);
         new Label("Screen Name").addTo(panel);
-        TextBox screenNameBox = new TextBox(new TerminalSize(21, 1))
+        final TextBox screenNameBox = new TextBox(new TerminalSize(21, 1))
             .setValidationPattern(Pattern.compile(".{0,20}"))
+            .addTo(panel);
+        new Label("Topic Words (comma separated)").addTo(panel);
+        final TextBox topicWordsBox = new TextBox(new TerminalSize(21, 1))
             .addTo(panel);
 
         new EmptySpace(new TerminalSize(0,0)).addTo(panel);
@@ -171,6 +179,25 @@ public class Tupperware {
                     return "Password don't match!";
                 }
 
+                HashSet<String> unique = new HashSet<String>();
+                String[] tagstring = topicWordsBox.getText().split(",");
+                for (int i = 0; i < tagstring.length; i++) {
+                    String tag = tagstring[i].trim();;
+                    tagstring[i] = tag;
+                    if (tag.length() > 200) {
+                        return "Topic words must be at most 200 chars";
+                    } else if (tag.length() == 0) {
+                        if (tagstring.length == 0) {
+                            return "Must provide at least one topic word";
+                        } else {
+                            return "Tags must be longer than zero characters";
+                        }
+                    }
+                    if (!unique.add(tag)) {
+                        return "No duplicate topic words allowed!";
+                    }
+                }
+
                 try {
                     UsersEntity u = UsersEntity.create(
                             nameBox.getText(),
@@ -181,6 +208,10 @@ public class Tupperware {
                             false);
                     if (u == null) {
                         return "Email already in use!";
+                    }
+
+                    for (String tag : tagstring) {
+                        u.addTag(tag);
                     }
 
                     currentUser = u;
@@ -197,18 +228,18 @@ public class Tupperware {
     }
 
     private void login() {
-        BasicWindow window = new BasicWindow();
+        final BasicWindow window = new BasicWindow();
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
 
-        Panel panel = new Panel();
+        final Panel panel = new Panel();
         panel.setLayoutManager(new GridLayout(2));
 
         new Label("Email").addTo(panel);
-        TextBox emailBox = new TextBox(new TerminalSize(21, 1))
+        final TextBox emailBox = new TextBox(new TerminalSize(21, 1))
             .setValidationPattern(Pattern.compile(".{0,20}"))
             .addTo(panel);
         new Label("Password").addTo(panel);
-        TextBox passwordBox = new TextBox(new TerminalSize(21, 1))
+        final TextBox passwordBox = new TextBox(new TerminalSize(21, 1))
             .setMask('*')
             .setValidationPattern(Pattern.compile(".{0,10}"))
             .addTo(panel);
@@ -273,24 +304,28 @@ public class Tupperware {
     }
 
     public void logout() {
+        currentSession.delete();
         try {
-            throw new Exception("fuck");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            Files.delete(Paths.get(System.getProperty("user.home"), ".tupperwaretoken"));
+        } catch (Exception e) {}
     }
 
     public void mainMenu() {
-        Tupperware root = this;
-        BasicWindow window = new BasicWindow();
+        final Tupperware root = this;
+        final BasicWindow window = new DynamicWindow("", true, null, true);
         //window.setHints(Arrays.asList(Window.Hint.CENTERED));
 
-        Panel panel = new Panel();
-        panel.setLayoutManager(new LinearLayout(Direction.HORIZONTAL));
+        final Panel panel = new Panel();
+        panel.setLayoutManager(new GridLayout(6));
 
-        new Label("Tupperware™").addTo(panel);
+        new Label("Tupperware™        ").addTo(panel);
 
-        new EmptySpace(new TerminalSize(5,1)).addTo(panel);
+        new Button("Friends", new Runnable() {
+            @Override
+            public void run() {
+                addWindow(new FriendManager(root));
+            }
+        }).addTo(panel);
 
         new Button("New Post", new Runnable() {
             @Override
@@ -299,13 +334,34 @@ public class Tupperware {
             }
         }).addTo(panel);
 
-        new Button("lmao", new Runnable() {
+        new Button("MyCircle", new Runnable() {
             @Override
             public void run() {
-                //DynamicWindow x = new DynamicWindow("Chat hell", false, new TerminalSize(30, 10));
-                //x.setComponent(new Label("welcome to the bone zone"));
-                BasicWindow x = dumbPostsWindow();
-                gui.addWindow(x);
+                addWindow(new MyCircleWindow(root));
+            }
+        }).addTo(panel);
+
+        new Button("My Profile", new Runnable() {
+            @Override
+            public void run() {
+                addWindow(new UserWindow(root, currentUser));
+            }
+        }).addTo(panel);
+
+        new Button("Chat", new Runnable() {
+            @Override
+            public void run() {
+                addWindow(new ChatOverviewWindow(root));
+            }
+        }).addTo(panel);
+
+        // -------------------------------
+        new EmptySpace(TerminalSize.ONE).addTo(panel);
+
+        new Button("Browse Posts", new Runnable() {
+            @Override
+            public void run() {
+                addWindow(new SearchWindow(root));
             }
         }).addTo(panel);
 
@@ -324,6 +380,22 @@ public class Tupperware {
             }
         }).addTo(panel);
 
+        new Button("Help", new Runnable() {
+            @Override
+            public void run() {
+                addWindow(new HelpWindow(root));
+            }
+        }).addTo(panel);
+
+        if (currentUser.isManager) {
+            new Button("Manage", new Runnable() {
+                @Override
+                public void run() {
+                    addWindow(new ManagerWindow(root));
+                }
+            }).addTo(panel);
+        }
+
         window.setComponent(panel);
         gui.addWindowAndWait(window);
     }
@@ -333,10 +405,25 @@ public class Tupperware {
             window.construct();
             activeWindows.add(window);
             gui.addWindow(window);
+        } else {
+            for (Window w : activeWindows) {
+                if (w.equals(window)) {
+                    gui.setActiveWindow(w);
+                    break;
+                }
+            }
         }
     }
 
+    public void removeWindow(ParametrizedWindow window) {
+        activeWindows.remove(window);
+    }
+
     public <T> T genericPicker(List<T> items, String text, String failText) {
+        return Tupperware.staticGenericPicker(gui, items, text, failText);
+    }
+
+    public static <T> T staticGenericPicker(WindowBasedTextGUI gui, List<T> items, String text, String failText) {
         if (items.size() == 0) {
             if (failText != null) {
                 MessageDialog.showMessageDialog(gui, "Nothing to Pick!", failText);
@@ -347,18 +434,10 @@ public class Tupperware {
         final ArrayList<T> selected = new ArrayList<T>();
         ActionListDialogBuilder b = new ActionListDialogBuilder();
         b.setTitle("Picker");
-        b.setDescription("Text");
+        b.setDescription(text);
 
         for (T item : items) {
-            b.addAction(item.toString(), new Runnable() {
-                private final T innerItem = item;
-                @Override public void run() {
-                    if (selected.size() != 0) {
-                        selected.clear();
-                    }
-                    selected.add(innerItem);
-                }
-            });
+            b.addAction(item.toString(), new HellRun<T>(item, selected));
         }
 
         b.build().showDialog(gui);
@@ -369,104 +448,33 @@ public class Tupperware {
         }
     }
 
+    private static class HellRun<T> implements Runnable {
+        private final T innerItem;
+        private final ArrayList<T> selected;
+
+        public HellRun(T item, ArrayList<T> selectedList) {
+            innerItem = item;
+            selected = selectedList;
+        }
+
+        @Override public void run() {
+            if (selected.size() != 0) {
+                selected.clear();
+            }
+            selected.add(innerItem);
+        }
+    }
+
     public UsersEntity friendsPicker(String text) {
         return genericPicker(currentUser.getFriends(), text, "Please make some friends first!");
     }
 
-    public static BasicWindow dumbPostsWindow() {
-        BasicWindow window = new DynamicWindow("Dummy posts!", false, new TerminalSize(60, 15));
-        ScrollingPanel contentPanel = new ScrollingPanel();
-
-        contentPanel.addComponent(new Button("Line 0"));
-        contentPanel.addComponent(new Label ("Line 1"));
-        contentPanel.addComponent(new Label ("Line 2"));
-        contentPanel.addComponent(new Button("Line 3"));
-        contentPanel.addComponent(new Label ("Line 4"));
-        contentPanel.addComponent(new Label ("Line 5"));
-        contentPanel.addComponent(new Button("Line 6"));
-        contentPanel.addComponent(new Label ("Line 7"));
-        contentPanel.addComponent(new Label ("Line 8"));
-        contentPanel.addComponent(new Button("Line 9"));
-        contentPanel.addComponent(new Label ("Line 10"));
-        contentPanel.addComponent(new Label ("Line 11"));
-        contentPanel.addComponent(new Button("Line 12"));
-        contentPanel.addComponent(new Label ("Line 13"));
-        contentPanel.addComponent(new Label ("Line 14"));
-        contentPanel.addComponent(new Button("Line 15"));
-        contentPanel.addComponent(new Label ("Line 16"));
-        contentPanel.addComponent(new Label ("Line 17"));
-        contentPanel.addComponent(new Button("Line 18"));
-        contentPanel.addComponent(new Label ("Line 19"));
-        contentPanel.addComponent(new Label ("Line 20"));
-        contentPanel.addComponent(new Button("Line 21"));
-        contentPanel.addComponent(new WordWrapTextBox(lipsum));
-        contentPanel.addComponent(new Button("Line 23"));
-        contentPanel.addComponent(new Button("Line 24"));
-        contentPanel.addComponent(new Button("Line 25"));
-        contentPanel.addComponent(new Button("Line 26"));
-        contentPanel.addComponent(new Button("Line 27"));
-        contentPanel.addComponent(new Button("Line 28"));
-        contentPanel.addComponent(new Button("Line 29"));
-        contentPanel.addComponent(new Button("Line 30"));
-        contentPanel.addComponent(new Button("Line 31"));
-        contentPanel.addComponent(new Button("Line 32"));
-        contentPanel.addComponent(new Button("Line 33"));
-        contentPanel.addComponent(new Button("Line 34"));
-
-        window.setComponent(contentPanel);
-        return window;
+    public void error(String message) {
+        message(message, "Error"); // thanks java
     }
 
-    public static BasicWindow dumbChatWindow() {
-        BasicWindow window = new DynamicWindow("Dummy chat!", false, new TerminalSize(50, 15));
-        Panel controlPanel = new Panel();
-
-        WordWrapTextBox contentBox = new WordWrapTextBox("here we go :)", WordWrapTextBox.Style.MULTI_LINE);
-        ChatLineTextBox box = new ChatLineTextBox() {
-            @Override
-            public boolean handleLine(String line) {
-                contentBox.addLine(getText());
-                contentBox.moveToBottom();
-                return true;
-            }
-
-            @Override
-            public boolean handleUp(KeyStroke stroke) {
-                contentBox.handleKeyStroke(stroke);
-                return true;
-            }
-
-            @Override
-            public boolean handleDown(KeyStroke stroke) {
-                contentBox.handleKeyStroke(stroke);
-                return true;
-            }
-
-            @Override
-            public boolean handlePageUp(KeyStroke stroke) {
-                contentBox.handleKeyStroke(stroke);
-                return true;
-            }
-
-            @Override
-            public boolean handlePageDown(KeyStroke stroke) {
-                contentBox.handleKeyStroke(stroke);
-                return true;
-            }
-        };
-
-        controlPanel.setLayoutManager(new BorderLayout());
-        box.setLayoutData(BorderLayout.Location.BOTTOM);
-        contentBox.setLayoutData(BorderLayout.Location.CENTER);
-        //contentBox.setReadOnly(true);
-        contentBox.setEnabled(false);
-
-        controlPanel.addComponent(contentBox);
-        controlPanel.addComponent(box);
-
-        window.setComponent(controlPanel);
-        window.setFocusedInteractable(box);
-        return window;
+    public void message(String message, String title) {
+        MessageDialog.showMessageDialog(gui, title, message);
     }
 
     public static String lipsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse a metus vel dui dapibus feugiat. Etiam nisi mauris, blandit quis odio ut, pharetra aliquet orci.\nNam facilisis dui vehicula urna vulputate, a vestibulum ex luctus. Phasellus consectetur nisl quis tincidunt gravida. Duis fermentum, sapien ac dapibus viverra, felis eros volutpat sem, ut vehicula justo neque et nisi.\nMaecenas luctus nibh vel orci congue placerat. Praesent a felis id risus consequat scelerisque. Aenean non ultrices quam, quis blandit sapien. Curabitur venenatis commodo purus, id aliquam odio pellentesque in.\nEtiam eu tristique enim. Pellentesque euismod at elit sit amet placerat. Nunc nulla diam, bibendum nec nunc ut, varius semper erat. Cras vel velit a purus porttitor placerat. Nulla mattis velit eros, nec ultricies mauris ultrices sit amet. Fusce mi quam, auctor et vulputate quis, tempus ac diam. Integer nec nibh orci. Praesent ac sapien tortor.\nPellentesque vel ante eu mauris pretium accumsan.";

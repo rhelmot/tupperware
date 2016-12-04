@@ -116,7 +116,7 @@ public class ScrollingPanel extends AbstractComponent<ScrollingPanel> implements
             @Override
             public void drawComponent(TextGUIGraphics graphics, ScrollingPanel component) {
                 if(isInvalid()) {
-                    layout(graphics.getSize());
+                    layout(getSize());
                 }
 
                 // Reset the area
@@ -167,6 +167,12 @@ public class ScrollingPanel extends AbstractComponent<ScrollingPanel> implements
         }
         return super.isInvalid();
     }    
+
+    public void setFocus(Interactable thatOne) {
+        if (getBasePane() == null) return;
+        getBasePane().setFocusedInteractable(thatOne);
+        scrollIntoView(thatOne);
+    }
 
     // Algorithm: first check that the given component is not already in view
     // if it is not, it is either off the top or off the bottom.
@@ -276,6 +282,13 @@ public class ScrollingPanel extends AbstractComponent<ScrollingPanel> implements
         return curComponent == components.size() && remaining >= 0;
     }
 
+    public Interactable nextFocus() {
+        if (getBasePane() == null) return null;
+        Interactable x = nextFocus(getBasePane().getFocusedInteractable());
+        getBasePane().setFocusedInteractable(x);
+        return x;
+    }
+
     @Override
     public Interactable nextFocus(Interactable fromThis) {
         boolean chooseNextAvailable = (fromThis == null);
@@ -319,6 +332,13 @@ public class ScrollingPanel extends AbstractComponent<ScrollingPanel> implements
         }
         scrollToBottom();
         return null;
+    }
+
+    public Interactable previousFocus() {
+        if (getBasePane() == null) return null;
+        Interactable x = previousFocus(getBasePane().getFocusedInteractable());
+        getBasePane().setFocusedInteractable(x);
+        return x;
     }
 
     @Override

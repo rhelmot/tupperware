@@ -1,8 +1,9 @@
 import com.googlecode.lanterna.gui2.*;
+import com.googlecode.lanterna.gui2.dialogs.*;
 import com.googlecode.lanterna.TerminalSize;
 
 import java.util.regex.Pattern;
-import java.util.ArrayList;
+import java.util.*;
 
 public class NewPostWindow extends ParametrizedWindow {
     private TextBox postBodyKnob = null;
@@ -12,7 +13,7 @@ public class NewPostWindow extends ParametrizedWindow {
     private ArrayList<UsersEntity> postAudienceBacker = null;
 
     public void construct() {
-        Button addFriendButton = new Button("Add friend", new Runnable() {
+        final Button addFriendButton = new Button("Add friend", new Runnable() {
             @Override
             public void run() {
                 UsersEntity selected = root.friendsPicker("Add to the audience");
@@ -23,7 +24,7 @@ public class NewPostWindow extends ParametrizedWindow {
             }
         });
 
-        Button removeFriendButton = new Button("Remove friend", new Runnable() {
+        final Button removeFriendButton = new Button("Remove friend", new Runnable() {
             @Override
             public void run() {
                 UsersEntity selected = root.genericPicker(postAudienceBacker, "Remove from the audience", "There's nobody to remove!");
@@ -62,10 +63,39 @@ public class NewPostWindow extends ParametrizedWindow {
 
         postAudienceBacker = new ArrayList<UsersEntity>();
 
-        Button submitPostButton = new Button("Submit Post", new Runnable() {
+        final Button submitPostButton = new Button("Submit Post");
+        submitPostButton.addListener(new Button.Listener() {
             @Override
-            public void run() {
-
+            public void onTriggered(Button button) {
+                submitPostButton.setLabel("Working...");
+                try {
+                    PostsEntity newpost;
+                    String[] tagstring = postTagsKnob.getText().split(",");
+                    for (int i = 0; i < tagstring.length; i++) {
+                        tagstring[i] = tagstring[i].trim();
+                    }
+                    Set<String> unique = new HashSet<String>();
+                    for (String tag: tagstring) {
+                        if (!unique.add(tag)) {
+                            throw new DomainError("No duplicate tags allowed!");
+                        }
+                    }
+                    if (isPublicKnob.isChecked()) {
+                        newpost = PostsEntity.createPublic(root.currentUser, postBodyKnob.getText(), tagstring);
+                    } else {
+                        newpost = PostsEntity.createPrivate(root.currentUser, postBodyKnob.getText(), tagstring, postAudienceBacker.toArray(new UsersEntity[postAudienceBacker.size()]));
+                    }
+                    if (newpost == null) {
+                        throw new DomainError("That's a REALLY weird error");
+                    } else {
+                        MessageDialog.showMessageDialog(root.gui, "Success", "Your post has been posted!");
+                        close();
+                    }
+                } catch (DomainError e) {
+                    MessageDialog.showMessageDialog(root.gui, "Error", e.getMessage());
+                } finally {
+                    submitPostButton.setLabel("Submit Post");
+                }
             }
         });
 

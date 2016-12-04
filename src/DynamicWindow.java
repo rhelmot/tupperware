@@ -4,10 +4,11 @@ import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 
-import java.util.Collections;
+import java.util.*;
 
 public class DynamicWindow extends BasicWindow {
     private boolean isManaged;
+    private boolean isRoot;
 
     public DynamicWindow(String title) {
         this(title, true, null);
@@ -18,6 +19,10 @@ public class DynamicWindow extends BasicWindow {
     }
 
     public DynamicWindow(String title, boolean isManaged, TerminalSize startSize) {
+        this(title, isManaged, startSize, false);
+    }
+
+    public DynamicWindow(String title, boolean isManaged, TerminalSize startSize, boolean isRoot) {
         super(title);
 
         if (isManaged) {
@@ -28,17 +33,19 @@ public class DynamicWindow extends BasicWindow {
         }
 
         this.isManaged = isManaged;
+        this.isRoot = isRoot;
     }
 
     @Override
     public boolean handleInput(KeyStroke key) {
         boolean handled = false;
+        //System.err.println(key);
         switch(key.getKeyType()) {
             case ArrowDown:
                 if (!isManaged && key.isAltDown() && key.isCtrlDown()) {
                     setSize(getSize().withRelativeRows(1));
                     handled = true;
-                } else if (key.isAltDown() && !key.isCtrlDown()) {
+                } else if (!key.isAltDown() && key.isCtrlDown()) {
                     setPosition(getPosition().withRelativeRow(1));
                     handled = true;
                 }
@@ -47,7 +54,7 @@ public class DynamicWindow extends BasicWindow {
                 if (!isManaged && key.isAltDown() && key.isCtrlDown() && getSize().getColumns() > 1) {
                     setSize(getSize().withRelativeColumns(-1));
                     handled = true;
-                } else if (key.isAltDown() && !key.isCtrlDown()) {
+                } else if (!key.isAltDown() && key.isCtrlDown()) {
                     setPosition(getPosition().withRelativeColumn(-1));
                     handled = true;
                 }
@@ -56,7 +63,7 @@ public class DynamicWindow extends BasicWindow {
                 if (!isManaged && key.isAltDown() && key.isCtrlDown()) {
                     setSize(getSize().withRelativeColumns(1));
                     handled = true;
-                } else if (key.isAltDown() && !key.isCtrlDown()) {
+                } else if (!key.isAltDown() && key.isCtrlDown()) {
                     setPosition(getPosition().withRelativeColumn(1));
                     handled = true;
                 }
@@ -65,14 +72,34 @@ public class DynamicWindow extends BasicWindow {
                 if (!isManaged && key.isAltDown() && key.isCtrlDown() && getSize().getRows() > 1) {
                     setSize(getSize().withRelativeRows(-1));
                     handled = true;
-                } else if (key.isAltDown() && !key.isCtrlDown()) {
+                } else if (!key.isAltDown() && key.isCtrlDown()) {
                     setPosition(getPosition().withRelativeRow(-1));
                     handled = true;
                 }
                 break;
             case Escape:
-                close();
-                handled = true;
+                if (!isRoot) {
+                    close();
+                    handled = true;
+                }
+                break;
+            case F5:
+                if (this instanceof ParametrizedWindow) {
+                    ((ParametrizedWindow)this).construct();
+                    handled = true;
+                }
+                break;
+            case Character:
+                if ((key.getCharacter() == ' ' || key.getCharacter() == 'n') && key.isCtrlDown() && getTextGUI().getWindows().size() > 1) {
+                    Collection<Window> windows = getTextGUI().getWindows();
+                    ArrayList<Window> windowNames = new ArrayList<Window>(windows);
+
+                    Window picked = Tupperware.staticGenericPicker(getTextGUI(), windowNames, "Pick a window", "how the fuck did you just do that");
+                    if (picked != null) {
+                        getTextGUI().setActiveWindow(picked);
+                    }
+                    handled = true;
+                }
                 break;
             default:
         }
@@ -80,5 +107,13 @@ public class DynamicWindow extends BasicWindow {
             handled = super.handleInput(key);
         }
         return handled;
+    }
+
+    public String toString() {
+        if (isRoot) {
+            return "Tupperware Menu";
+        } else {
+            return getTitle();
+        }
     }
 }

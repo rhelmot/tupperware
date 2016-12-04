@@ -1,0 +1,27 @@
+MANAGERS - x
+ read count logging - x
+ all the stats in the spec (2.8) - x
+ report generation - x
+ timestamp changing - x
+ automatic report generation - x
+MISC - x
+ delete posts - x
+ enforce uniqueness of post tags - x
+ add adding tags at account creation - x
+ default search tags come from user - x
+ garbage collection (chat groups) - x
+ window refresh - x
+MESSAGES - x
+ generic interface - x
+ private version - x
+ group version - x
+ group creation/editing - x
+TESTING - x
+ check db connection closing - x
+ tune window sizes - x
+ check == uses - x
+OPTIONAL
+ chat live update
+ edit posts
+ add editing user profile
+ administrative view

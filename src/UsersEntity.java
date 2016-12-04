@@ -112,6 +112,22 @@ public class UsersEntity extends Entity {
         return Database.i().getFriends(this.hid);
     }
 
+    public ArrayList<UsersEntity> getActiveRequests() {
+        return Database.i().getActiveRequests(this.hid);
+    }
+
+    public ArrayList<UsersEntity> getPendingRequests() {
+        return Database.i().getPendingRequests(this.hid);
+    }
+
+    public boolean isActiveRequest(UsersEntity other) {
+        return getActiveRequests().contains(other);
+    }
+
+    public boolean isPendingRequest(UsersEntity other) {
+        return getPendingRequests().contains(other);
+    }
+
     public boolean makeFriends(UsersEntity other) {
         return Database.i().makeFriends(this.hid, other.hid);
     }
@@ -128,6 +144,10 @@ public class UsersEntity extends Entity {
         return Database.i().unrequestFriends(this.hid, other.hid);
     }
 
+    public boolean unfriend(UsersEntity other) {
+        return Database.i().unfriend(this.hid, other.hid);
+    }
+
     public ArrayList<ChatGroupsEntity> getChatGroups() {
         return Database.i().getChatGroupsForUser(this.hid);
     }
@@ -136,12 +156,73 @@ public class UsersEntity extends Entity {
         return Database.i().getChatGroupsPendingForUser(this.hid);
     }
 
+    public ArrayList<UsersEntity> getPrivateMessages() {
+        return Database.i().getPrivateMessageThreads(this.hid);
+    }
+
     public boolean addTag(String tagText) {
         return Database.i().addUserTag(this.hid, tagText);
     }
 
     public boolean deleteTag(String tagText) {
         return Database.i().deleteUserTag(this.hid, tagText);
+    }
+
+    public ArrayList<String> getTags() {
+        return Database.i().getUserTags(hid);
+    }
+
+    public static ArrayList<UsersEntity> search(String email, String phone, String name, String screenname, String[] tagsAnd, String[] tagsOr, Integer lastPost, Integer postCount) throws DomainError {
+        if (email == null && phone == null && name == null && screenname == null && tagsAnd == null && tagsOr == null && lastPost == null && postCount == null) {
+            throw new DomainError("You must specify at last one search parameter!");
+        }
+
+        if (email != null) {
+            if (email.length() > 20) throw new DomainError("Email too long");
+            for (int i = 0; i < email.length(); i++) {
+                char c = email.charAt(i);
+                if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                    throw new DomainError("Email must not contain whitespace");
+                }
+            }
+        }
+
+        if (name != null && name.length() > 20) throw new DomainError("Name too long");
+
+        if (phone != null) {
+            if (phone.length() != 10) throw new DomainError("Phone must be 10 chars");
+            for (int i = 0; i < phone.length(); i++) {
+                if (phone.charAt(i) < '0' || phone.charAt(i) > '9') {
+                    throw new DomainError("Phone must be digits");
+                }
+            }
+        }
+
+        if (tagsAnd != null) {
+            for (int i = 0; i < tagsAnd.length; i++) {
+                String tag = tagsAnd[i].trim();;
+                tagsAnd[i] = tag;
+                if (tag.length() > 200) {
+                    throw new DomainError("Tags must be at most 200 chars");
+                } else if (tag.length() == 0) {
+                    throw new DomainError("Tags must be longer than zero characters");
+                }
+            }
+        }
+
+        if (tagsOr != null) {
+            for (int i = 0; i < tagsOr.length; i++) {
+                String tag = tagsOr[i].trim();;
+                tagsOr[i] = tag;
+                if (tag.length() > 200) {
+                    throw new DomainError("Tags must be at most 200 chars");
+                } else if (tag.length() == 0) {
+                    throw new DomainError("Tags must be longer than zero characters");
+                }
+            }
+        }
+
+        return Database.i().searchUsers(email, phone, name, screenname, tagsAnd, tagsOr, lastPost, postCount);
     }
 
     @Override
@@ -156,5 +237,10 @@ public class UsersEntity extends Entity {
     @Override
     public int hashCode() {
         return 97653 + 371 * hid;
+    }
+
+    @Override
+    public String toString() {
+        return name + " (" + email + ")";
     }
 }

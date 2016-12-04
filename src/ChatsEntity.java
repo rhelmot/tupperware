@@ -106,4 +106,20 @@ public class ChatsEntity extends Entity {
     public static ArrayList<ChatsEntity> getGroupChats(UsersEntity me, ChatGroupsEntity group, ChatsEntity after, int count) {
         return Database.i().getChatsForGroup(me.hid, group.gid, after == null ? 999999999 : after.cid, count);
     }
+
+    public String toString() {
+        return text;
+    }
+
+    public boolean equals(Object other) {
+        if (other instanceof ChatsEntity) {
+            return cid.equals(((ChatsEntity)other).cid);
+        } else {
+            return false;
+        }
+    }
+
+    public int hashCode() {
+        return 89043 + cid.hashCode() * 4457;
+    }
 }

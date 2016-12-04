@@ -24,13 +24,15 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TerminalTextUtils;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
 
 public class TestTupperware {
     public static void main(String[] args) throws IOException, InterruptedException {
-        new TestTupperware().run(args);
+        String s = "hell yell";
+        System.out.println(TerminalTextUtils.getWordWrappedText(s.length(), s));
     }
 
     public void init(WindowBasedTextGUI textGUI) {

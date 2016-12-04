@@ -73,7 +73,7 @@ CREATE TABLE Posts (
 CREATE TABLE PostVisibilities (
     pid INTEGER NOT NULL,
     hid INTEGER,
-    FOREIGN KEY (pid) REFERENCES Posts(pid),
+    FOREIGN KEY (pid) REFERENCES Posts(pid) ON DELETE CASCADE,
     FOREIGN KEY (hid) REFERENCES Users(hid)
 );
 
@@ -94,13 +94,52 @@ CREATE TABLE Chats (
 CREATE TABLE PostTags (
     pid INTEGER NOT NULL,
     tagText VARCHAR(200) NOT NULL,
-    FOREIGN KEY (pid) REFERENCES Posts(pid)
+    PRIMARY KEY (pid, tagText),
+    FOREIGN KEY (pid) REFERENCES Posts(pid) ON DELETE CASCADE
 );
 
 CREATE TABLE UserTags (
     hid INTEGER NOT NULL,
     tagText VARCHAR(200) NOT NULL,
+    PRIMARY KEY (hid, tagText),
     FOREIGN KEY (hid) REFERENCES Users(hid)
+);
+
+CREATE TABLE Reads (
+    pid INTEGER NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    FOREIGN KEY (pid) REFERENCES Posts(pid) ON DELETE CASCADE
+);
+
+CREATE TABLE Reports (
+    tid INTEGER NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    newMessages INTEGER NOT NULL,
+    messageReads INTEGER NOT NULL,
+    avgMessageReads REAL NOT NULL,
+    avgNewMessageReads REAL NOT NULL,
+    topPost1 INTEGER,
+    topPost2 INTEGER,
+    topPost3 INTEGER,
+    topUser1 INTEGER,
+    topUser2 INTEGER,
+    topUser3 INTEGER,
+    inactiveUserCount INTEGER NOT NULL,
+    PRIMARY KEY (tid),
+    FOREIGN KEY (topPost1) REFERENCES Posts(pid) ON DELETE SET NULL,
+    FOREIGN KEY (topPost2) REFERENCES Posts(pid) ON DELETE SET NULL,
+    FOREIGN KEY (topPost3) REFERENCES Posts(pid) ON DELETE SET NULL,
+    FOREIGN KEY (topUser1) REFERENCES Users(hid) ON DELETE SET NULL,
+    FOREIGN KEY (topUser2) REFERENCES Users(hid) ON DELETE SET NULL,
+    FOREIGN KEY (topUser3) REFERENCES Users(hid) ON DELETE SET NULL
+);
+
+CREATE TABLE ReportTagData (
+    tid INTEGER NOT NULL,
+    tagText VARCHAR(200) NOT NULL,
+    pid INTEGER NOT NULL,
+    FOREIGN KEY (tid) REFERENCES Reports(tid),
+    FOREIGN KEY (pid) REFERENCES Posts(pid) ON DELETE SET NULL
 );
 
 CREATE SEQUENCE SeqHid START WITH 1;
@@ -108,6 +147,7 @@ CREATE SEQUENCE SeqPid START WITH 1;
 CREATE SEQUENCE SeqCid START WITH 1;
 CREATE SEQUENCE SeqGid START WITH 1;
 CREATE SEQUENCE SeqSid START WITH 1;
+CREATE SEQUENCE SeqTid START WITH 1;
 
 CREATE OR REPLACE FUNCTION getTime
     RETURN TIMESTAMP
@@ -126,4 +166,15 @@ CREATE OR REPLACE FUNCTION getTime
     END;
 /
 
-SELECT get_time() from dual;
+CREATE OR REPLACE FUNCTION DATE_SUB (t IN TIMESTAMP, i IN INTERVAL DAY TO SECOND)
+    RETURN TIMESTAMP
+    AS
+        output TIMESTAMP;
+    BEGIN
+        output := t - i;
+        RETURN(output);
+    END;
+/
+
+SELECT getTime() from dual;
+SELECT DATE_SUB(getTime(), INTERVAL '2' DAY) from dual;

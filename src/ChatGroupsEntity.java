@@ -17,12 +17,15 @@ public class ChatGroupsEntity extends Entity {
 
     public static ChatGroupsEntity create(String groupName, int duration, UsersEntity owner) throws DomainError {
         if (groupName.length() > 20) {
-            throw new DomainError("Group must be no more than 20 chars");
+            throw new DomainError("Group name must be no more than 20 chars");
+        }
+        if (duration <= 0) {
+            throw new DomainError("Group duration must be a postitve number");
         }
         ChatGroupsEntity out = new ChatGroupsEntity(null, groupName, duration);
         out.owner = owner;
         if (out.save()) {
-            if (Database.i().insertChatGroupMembership(out.gid, owner.hid, true, true)) {
+            if (Database.i().insertChatGroupMembership(out.gid, owner.hid, 0, true, true)) {
                 return out;
             } else {
                 // ???????????????
@@ -50,11 +53,31 @@ public class ChatGroupsEntity extends Entity {
         return Database.i().getChatGroupPendingMembers(this.gid);
     }
 
-    public boolean inviteUser(UsersEntity user) {
-        return Database.i().insertChatGroupMembership(this.gid, user.hid, false, false);
+    public boolean inviteUser(UsersEntity user, UsersEntity inviter) {
+        return Database.i().insertChatGroupMembership(this.gid, user.hid, inviter.hid, false, false);
     }
 
     public boolean acceptInvitation(UsersEntity user) {
         return Database.i().updateChatGroupMembership(this.gid, user.hid, false, true);
+    }
+
+    public UsersEntity getOwner() {
+        if (owner == null) {
+            owner = Database.i().getChatGroupOwner(this.gid);
+        }
+        return owner;
+    }
+
+    public boolean equals(Object other) {
+        if (gid == null) return this == other;
+        if (other instanceof ChatGroupsEntity) {
+            return gid.equals(((ChatGroupsEntity)other).gid);
+        } else {
+            return false;
+        }
+    }
+
+    public int hashCode() {
+        return 99321 + groupName.hashCode() * 56711;
     }
 }
