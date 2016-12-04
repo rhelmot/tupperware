@@ -1,1 +1,15 @@
-../../sql
+#!/bin/bash
+
+USERNAME="dutcher@XE"
+PASSWORD="096"
+
+COMMAND="sqlplus $USERNAME/$PASSWORD"
+
+if [ "$1" == "-c" ]; then
+    shift
+    exec echo "$@" | $COMMAND 
+elif [ -n "$1" ]; then
+    exec $COMMAND @$1 < /dev/null
+else
+    exec $COMMAND
+fi
