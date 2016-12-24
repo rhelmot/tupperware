@@ -1,1 +1,4 @@
-./src:./lib/
+<config>
+	<classpathentry kind="src" output="./src" />
+	<classpathentry kind="lib" path="./lib" />
+</config>

@@ -28,10 +28,10 @@ public class Database {
     public Database() {
         if (ONLINE) {
             try {
-                Class.forName("oracle.jdbc.driver.OracleDriver");
-                String url = "jdbc:oracle:thin:@uml.cs.ucsb.edu:1521:xe";
-                String username = "dutcher";
-                String password = "096";
+                Class.forName("org.postgresql.Driver");
+                String url = "jdbc:postgresql:tupperware";
+                String username = "tupperware";
+                String password = "";
 
                 this.con = DriverManager.getConnection(url, username, password);
                 synchronized (conList) {
@@ -85,6 +85,7 @@ public class Database {
                 this.makePostVisibleStmt = con.prepareStatement(Database.makePostVisibleSql);
                 this.getPostStmt = con.prepareStatement(Database.getPostSql);
                 this.deletePostStmt = con.prepareStatement(Database.deletePostSql);
+                this.deletePostVisibilitiesStmt = con.prepareStatement(Database.deletePostVisibilitiesSql);
 
                 this.getPostsByCircleStmt = con.prepareStatement(Database.getPostsByCircleSql);
                 this.getPostsByUserStmt = con.prepareStatement(Database.getPostsByUserSql);
@@ -128,7 +129,7 @@ public class Database {
         return inst.get();
     }
 
-    private static String getTimeSql = "SELECT getTime() FROM dual";
+    private static String getTimeSql = "SELECT getTime()";
     private PreparedStatement getTimeStmt;
     public Date getTime() {
         if (!ONLINE) return new Date();
@@ -242,7 +243,7 @@ public class Database {
         }
     }
 
-    private static String insertUserSql = "INSERT INTO Users (hid, email, name, phone, passwordHash, screenname, isManager) VALUES (SeqHid.NEXTVAL, ?, ?, ?, ?, ?, ?)";
+    private static String insertUserSql = "INSERT INTO Users (hid, email, name, phone, passwordHash, screenname, isManager) VALUES (NEXTVAL('SeqHid'), ?, ?, ?, ?, ?, ?)";
     private PreparedStatement insertUserStmt;
     public Integer insertUser(String email, String name, String phone, String passwordHash, String screenname, boolean isManager) {
         try {
@@ -287,7 +288,7 @@ public class Database {
         }
     }
 
-    private static String getFriendsSql = "SELECT hid, email, name, phone, passwordHash, screenname, isManager FROM Users join Friendships on Friendships.left = Users.hid WHERE Friendships.right=?";
+    private static String getFriendsSql = "SELECT hid, email, name, phone, passwordHash, screenname, isManager FROM Users join Friendships on Friendships.up = Users.hid WHERE Friendships.down=?";
     private PreparedStatement getFriendsStmt;
     public ArrayList<UsersEntity> getFriends(int hid) {
         if (ONLINE) {
@@ -380,7 +381,7 @@ public class Database {
         }
     }
 
-    private static String makeFriendsSql = "INSERT ALL INTO Friendships (left, right, since) VALUES (?, ?, getTime()) INTO Friendships (left, right, since) VALUES (?, ?, getTime()) SELECT * FROM dual";
+    private static String makeFriendsSql = "INSERT INTO Friendships (up, down, since) VALUES (?, ?, getTime()), (?, ?, getTime())";
     private PreparedStatement makeFriendsStmt;
     public boolean makeFriends(int hid1, int hid2) {
         try {
@@ -396,7 +397,7 @@ public class Database {
         }
     }
 
-    private static String areFriendsSql = "SELECT 1 FROM Friendships WHERE left=? AND right=?";
+    private static String areFriendsSql = "SELECT 1 FROM Friendships WHERE up=? AND down=?";
     private PreparedStatement areFriendsStmt;
     public boolean areFriends(int hid1, int hid2) {
         if (ONLINE) {
@@ -442,7 +443,7 @@ public class Database {
         }
     }
 
-    private static String unfriendSql = "DELETE FROM Friendships WHERE (left=? AND right=?) OR (left=? AND right=?)";
+    private static String unfriendSql = "DELETE FROM Friendships WHERE (up=? AND down=?) OR (up=? AND down=?)";
     private PreparedStatement unfriendStmt;
     public boolean unfriend(int a, int b) {
         try {
@@ -458,7 +459,7 @@ public class Database {
         }
     }
 
-    private static String insertSessionSql = "INSERT INTO Sessions (sid, token, hid, isManaging) VALUES (SeqSid.NEXTVAL, ?, ?, ?)";
+    private static String insertSessionSql = "INSERT INTO Sessions (sid, token, hid, isManaging) VALUES (NEXTVAL('SeqSid'), ?, ?, ?)";
     private PreparedStatement insertSessionStmt;
     public Integer insertSession(String token, int hid, boolean isManaging) {
         if (ONLINE) {
@@ -536,7 +537,7 @@ public class Database {
         }
     }
 
-    private static String insertChatGroupSql = "INSERT INTO ChatGroups (gid, groupName, duration) VALUES (SeqGid.NEXTVAL, ?, ?)";
+    private static String insertChatGroupSql = "INSERT INTO ChatGroups (gid, groupName, duration) VALUES (NEXTVAL('SeqGid'), ?, ?)";
     private PreparedStatement insertChatGroupStmt;
     public Integer insertChatGroup(String groupName, int duration) {
         try {
@@ -586,7 +587,7 @@ public class Database {
 
     private static String insertChatGroupMembershipSql = "INSERT INTO ChatGroupMemberships (gid, hid, isOwner, invitationAccepted) VALUES (?, ?, ?, ?)";
     private PreparedStatement insertChatGroupMembershipStmt;
-    private static String bootstrapNewGroupMemberSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) SELECT SeqCid.NEXTVAL, author, text, timestamp, ?, gid, 1, 0 FROM Chats WHERE gid=? AND hid=?";
+    private static String bootstrapNewGroupMemberSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) SELECT NEXTVAL('SeqCid'), author, text, timestamp, ?, gid, 1, 0 FROM Chats WHERE gid=? AND hid=?";
     private PreparedStatement bootstrapNewGroupMemberStmt;
     public boolean insertChatGroupMembership(int gid, int hid, int inviter, boolean isOwner, boolean invitationAccepted) {
         try {
@@ -717,7 +718,7 @@ public class Database {
         }
     }
 
-    private static String insertChatSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) VALUES (SeqCid.NEXTVAL, ?, ?, getTime(), ?, NULL, 0, 0)";
+    private static String insertChatSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) VALUES (NEXTVAL('SeqCid'), ?, ?, getTime(), ?, NULL, 0, 0)";
     private PreparedStatement insertChatStmt;
     public Integer insertChat(int author, String text, int hid) {
         try {
@@ -737,7 +738,7 @@ public class Database {
     // FUCK these horrible project requirements
     // FUCK me for not thinking this through
     // but mostly FUCK sql and java for both being so verbose and bureaucratic and forcing me to jump through a billion hoops to change my mind about any sort of design decision halfway through
-    private static String insertChatForGroupSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) SELECT SeqCid.NEXTVAL, ?, ?, getTime(), hid, ?, 1, 0 FROM ChatGroupMemberships WHERE gid=? AND invitationAccepted!=0";
+    private static String insertChatForGroupSql = "INSERT INTO Chats (cid, author, text, timestamp, hid, gid, deletedBySender, deletedByReceiver) SELECT NEXTVAL('SeqCid'), ?, ?, getTime(), hid, ?, 1, 0 FROM ChatGroupMemberships WHERE gid=? AND invitationAccepted!=0";
     private PreparedStatement insertChatForGroupStmt;
     public boolean insertChatForGroup(int author, String text, int gid) {
         try {
@@ -823,7 +824,7 @@ public class Database {
         }
     }
 
-    private static String insertPostSql = "INSERT INTO Posts (pid, author, text, timestamp, isPublic) VALUES (SeqPid.NEXTVAL, ?, ?, getTime(), ?)";
+    private static String insertPostSql = "INSERT INTO Posts (pid, author, text, timestamp, isPublic) VALUES (NEXTVAL('SeqPid'), ?, ?, getTime(), ?)";
     private PreparedStatement insertPostStmt;
     public Integer insertPost(int author, String text, boolean isPublic) {
         if (!ONLINE) return 1;
@@ -929,10 +930,10 @@ public class Database {
 "            (hid=? OR hid IS NULL) AND                                         " +
 "            (isPublic=0 OR 0!=?) AND                                           " +
 "            (author=? OR                                                       " +
-"                EXISTS(SELECT left, right                                      " +
+"                EXISTS(SELECT up, down                                      " +
 "                    FROM Friendships                                           " +
-"                    WHERE left=author                                          " +
-"                        AND right=?)                                           " +
+"                    WHERE up=author                                          " +
+"                        AND down=?)                                           " +
 "             )                                                                 " +
 "        ) AND Posts.pid<?                                                      " +
 "    ORDER BY timestamp DESC, Posts.pid DESC                                    ";
@@ -968,10 +969,10 @@ public class Database {
 "            (                                                                  " +
 "                (isPublic=1 AND 0!=?) OR                                       " +
 "                author=? OR                                                    " +
-"                EXISTS(SELECT left, right                                      " +
+"                EXISTS(SELECT up, down                                      " +
 "                    FROM Friendships                                           " +
-"                    WHERE left=author                                          " +
-"                        AND right=?)                                           " +
+"                    WHERE up=author                                          " +
+"                        AND down=?)                                           " +
 "             )                                                                 " +
 "        ) AND Posts.pid<?                                                      " +
 "    ORDER BY timestamp DESC, Posts.pid DESC                                    ";
@@ -1257,8 +1258,8 @@ public class Database {
         "SELECT other, MAX(timestamp) AS last FROM (" +
             "SELECT author as other, timestamp FROM Chats WHERE Chats.hid=? AND deletedByReceiver=0 AND Chats.gid is NULL " +
             "UNION SELECT hid as other, timestamp FROM Chats where Chats.author=? AND deletedBySender=0 AND Chats.gid is NULL" +
-        ") GROUP BY other" +
-    ") on other=Users.hid ORDER BY last DESC";
+        ") Sub1 GROUP BY other" +
+    ") Sub2 on other=Users.hid ORDER BY last DESC";
     private PreparedStatement getPrivateMessageThreadsStmt;
     public ArrayList<UsersEntity> getPrivateMessageThreads(int hid) {
         try {
@@ -1445,7 +1446,7 @@ public class Database {
         }
     }
 
-    private static String insertReportSql = "INSERT INTO Reports (tid, timestamp, newMessages, messageReads, avgMessageReads, avgNewMessageReads, topPost1, topPost2, topPost3, topUser1, topUser2, topUser3, inactiveUserCount) VALUES (SeqTid.NEXTVAL, getTime(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static String insertReportSql = "INSERT INTO Reports (tid, timestamp, newMessages, messageReads, avgMessageReads, avgNewMessageReads, topPost1, topPost2, topPost3, topUser1, topUser2, topUser3, inactiveUserCount) VALUES (NEXTVAL('SeqTid'), getTime(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private PreparedStatement insertReportStmt;
     public Integer insertReport(int newMessages, int newMessageReads, float avgMessageReads, float avgNewMessageReads, Integer topPost1, Integer topPost2, Integer topPost3, Integer topUser1, Integer topUser2, Integer topUser3, int inactiveUserCount) {
         try {

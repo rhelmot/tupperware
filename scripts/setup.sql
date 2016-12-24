@@ -1,11 +1,11 @@
 CREATE TABLE Settings (
     currentTime TIMESTAMP,
-    currentInterval INTERVAL DAY(9) to SECOND(0),
+    currentInterval INTERVAL,
     clockActive INTEGER NOT NULL
 );
 
 INSERT INTO SETTINGS (currentTime, currentInterval, clockActive)
-    VALUES (SYSTIMESTAMP, INTERVAL '0' SECOND, 1);
+    VALUES (NOW(), INTERVAL '0' HOUR, 1);
 
 CREATE TABLE Users (
     hid INTEGER NOT NULL,
@@ -19,12 +19,12 @@ CREATE TABLE Users (
 );
 
 CREATE TABLE Friendships (
-    left INTEGER NOT NULL,
-    right INTEGER NOT NULL,
+    up INTEGER NOT NULL,
+    down INTEGER NOT NULL,
     since TIMESTAMP NOT NULL,
-    PRIMARY KEY (left, right),
-    FOREIGN KEY (left) REFERENCES Users(hid),
-    FOREIGN KEY (right) REFERENCES Users(hid)
+    PRIMARY KEY (up, down),
+    FOREIGN KEY (up) REFERENCES Users(hid),
+    FOREIGN KEY (down) REFERENCES Users(hid)
 );
 
 CREATE TABLE FriendRequests (
@@ -149,32 +149,32 @@ CREATE SEQUENCE SeqGid START WITH 1;
 CREATE SEQUENCE SeqSid START WITH 1;
 CREATE SEQUENCE SeqTid START WITH 1;
 
-CREATE OR REPLACE FUNCTION getTime
-    RETURN TIMESTAMP
-    AS
-        output TIMESTAMP;
-        currentSettings Settings%ROWTYPE;
+CREATE OR REPLACE FUNCTION getTime()
+    RETURNS TIMESTAMP
+    AS $$
+    DECLARE output TIMESTAMP;
+    DECLARE currentSettings Settings%ROWTYPE;
     BEGIN
         SELECT * INTO currentSettings
             FROM Settings;
         IF currentSettings.clockActive = 0 THEN
             output := currentSettings.currentTime;
         ELSE
-            output := SYSTIMESTAMP + currentSettings.currentInterval;
+            output := now() + currentSettings.currentInterval;
         END IF;
         RETURN(output);
-    END;
-/
+    END $$
+    LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION DATE_SUB (t IN TIMESTAMP, i IN INTERVAL DAY TO SECOND)
-    RETURN TIMESTAMP
-    AS
-        output TIMESTAMP;
+CREATE OR REPLACE FUNCTION DATE_SUB (t IN TIMESTAMP, i IN INTERVAL)
+    RETURNS TIMESTAMP
+    AS $$
+    DECLARE output TIMESTAMP;
     BEGIN
         output := t - i;
         RETURN(output);
-    END;
-/
+    END $$
+    LANGUAGE plpgsql;
 
-SELECT getTime() from dual;
-SELECT DATE_SUB(getTime(), INTERVAL '2' DAY) from dual;
+SELECT getTime();
+SELECT DATE_SUB(getTime(), INTERVAL '2' DAY);

@@ -1,15 +1,14 @@
 #!/bin/bash
 
-USERNAME="dutcher@XE"
-PASSWORD="096"
+USERNAME="tupperware"
+PASSWORD=""
 
-COMMAND="sqlplus $USERNAME/$PASSWORD"
+COMMAND="psql -U$USERNAME"
 
 if [ "$1" == "-c" ]; then
-    shift
-    exec echo "$@" | $COMMAND 
+    exec $COMMAND "$@"
 elif [ -n "$1" ]; then
-    exec $COMMAND @$1 < /dev/null
+    exec $COMMAND < $1
 else
     exec $COMMAND
 fi
