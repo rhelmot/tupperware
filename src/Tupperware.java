@@ -72,6 +72,8 @@ public class Tupperware {
             e.printStackTrace();
             System.exit(1);
         }
+
+        MessageDialog.showMessageDialog(gui, "Tupperware", "Tupperware Copyright © 2016 Andrew Dutcher\n\nThis program comes with ABSOLUTELY NO WARRANTY\nThis is free software, and you are welcome to redistribute it under certain conditions.\nFor details, see the file 'LICENSE' distributed with this program.");
     }
 
     public void close() {
