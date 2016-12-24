@@ -7,15 +7,6 @@ import java.text.SimpleDateFormat;
 import java.text.ParseException;
 
 public class Database {
-    public static final boolean ONLINE = true;
-
-    public static final UsersEntity MOCK_ANDREW = new UsersEntity(1, "andrew@andrewdutcher", "Andrew Dutcher", "8056983068", "B9750E2AD66B77612B76F7739A930B5B43D7E54A17B0BB3F14933EF2D268D3FC", "andrew", true);
-    public static final UsersEntity MOCK_BRANDON = new UsersEntity(2, "brandon@andrewdutcher", "Brandon Dutcher", "8056983068", "B9750E2AD66B77612B76F7739A930B5B43D7E54A17B0BB3F14933EF2D268D3FC", "brandon", true);
-    public static final UsersEntity MOCK_JUDYANN = new UsersEntity(3, "judyann@andrewdutcher", "JudyAnn Dutcher", "8056983068", "B9750E2AD66B77612B76F7739A930B5B43D7E54A17B0BB3F14933EF2D268D3FC", "judy", true);
-    public static final UsersEntity MOCK_BOB = new UsersEntity(4, "bob@andrewdutcher", "Bob Dutcher", "8056983068", "B9750E2AD66B77612B76F7739A930B5B43D7E54A17B0BB3F14933EF2D268D3FC", "bob", true);
-
-    public static final int MOCK_LOGIN_ID = 1;
-
     private static ThreadLocal<Database> inst = new ThreadLocal<Database>() {
         protected synchronized Database initialValue() {
             return new Database();
@@ -26,102 +17,100 @@ public class Database {
     private static ArrayList<Connection> conList = new ArrayList<Connection>();
 
     public Database() {
-        if (ONLINE) {
-            try {
-                Class.forName("org.postgresql.Driver");
-                String url = "jdbc:postgresql:tupperware";
-                String username = "tupperware";
-                String password = "";
+        try {
+            Class.forName("org.postgresql.Driver");
+            String url = "jdbc:postgresql:tupperware";
+            String username = "tupperware";
+            String password = "";
 
-                this.con = DriverManager.getConnection(url, username, password);
-                synchronized (conList) {
-                    conList.add(this.con);
-                }
-
-                this.getTimeStmt = con.prepareStatement(Database.getTimeSql);
-                this.setTimeStaticStmt = con.prepareStatement(Database.setTimeStaticSql);
-                this.setTimeDynamicStmt = con.prepareStatement(Database.setTimeDynamicSql);
-                this.isTimeMovingStmt = con.prepareStatement(Database.isTimeMovingSql);
-
-                this.getUserStmt = con.prepareStatement(Database.getUserSql);
-                this.getUserByEmailStmt = con.prepareStatement(Database.getUserByEmailSql);
-                this.insertUserStmt = con.prepareStatement(Database.insertUserSql, new String[]{"hid"});
-                this.updateUserStmt = con.prepareStatement(Database.updateUserSql);
-                this.getFriendsStmt = con.prepareStatement(Database.getFriendsSql);
-                this.getPendingRequestsStmt = con.prepareStatement(Database.getPendingRequestsSql);
-                this.getActiveRequestsStmt = con.prepareStatement(Database.getActiveRequestsSql);
-                this.makeFriendsStmt = con.prepareStatement(Database.makeFriendsSql);
-                this.areFriendsStmt = con.prepareStatement(Database.areFriendsSql);
-                this.requestFriendsStmt = con.prepareStatement(Database.requestFriendsSql);
-                this.unrequestFriendsStmt = con.prepareStatement(Database.unrequestFriendsSql);
-                this.unfriendStmt = con.prepareStatement(Database.unfriendSql);
-
-                this.insertSessionStmt = con.prepareStatement(Database.insertSessionSql, new String[]{"sid"});
-                this.updateSessionStmt = con.prepareStatement(Database.updateSessionSql);
-                this.getSessionStmt = con.prepareStatement(Database.getSessionSql);
-                this.deleteSessionStmt = con.prepareStatement(Database.deleteSessionSql);
-
-                this.insertChatGroupStmt = con.prepareStatement(Database.insertChatGroupSql, new String[]{"gid"});
-                this.updateChatGroupStmt = con.prepareStatement(Database.updateChatGroupSql);
-                this.getChatGroupStmt = con.prepareStatement(Database.getChatGroupSql);
-                this.insertChatGroupMembershipStmt = con.prepareStatement(Database.insertChatGroupMembershipSql);
-                this.bootstrapNewGroupMemberStmt = con.prepareStatement(Database.bootstrapNewGroupMemberSql);
-                this.updateChatGroupMembershipStmt = con.prepareStatement(Database.updateChatGroupMembershipSql);
-                this.getChatGroupMembersStmt = con.prepareStatement(Database.getChatGroupMembersSql);
-                this.getChatGroupPendingMembersStmt = con.prepareStatement(Database.getChatGroupPendingMembersSql);
-                this.getChatGroupsForUserStmt = con.prepareStatement(Database.getChatGroupsForUserSql);
-                this.getChatGroupsPendingForUserStmt = con.prepareStatement(Database.getChatGroupsPendingForUserSql);
-                this.getChatGroupOwnerStmt = con.prepareStatement(Database.getChatGroupOwnerSql);
-
-                this.insertChatStmt = con.prepareStatement(Database.insertChatSql, new String[]{"cid"});
-                this.insertChatForGroupStmt = con.prepareStatement(Database.insertChatForGroupSql);
-                this.deleteChatSenderStmt = con.prepareStatement(Database.deleteChatSenderSql);
-                this.deleteChatReceiverStmt = con.prepareStatement(Database.deleteChatReceiverSql);
-                this.getChatsStmt = con.prepareStatement(Database.getChatsSql);
-                this.getChatsForGroupStmt = con.prepareStatement(Database.getChatsForGroupSql);
-
-                this.insertPostStmt = con.prepareStatement(Database.insertPostSql, new String[]{"pid"});
-                this.updatePostStmt = con.prepareStatement(Database.updatePostSql);
-                this.makePostVisibleStmt = con.prepareStatement(Database.makePostVisibleSql);
-                this.getPostStmt = con.prepareStatement(Database.getPostSql);
-                this.deletePostStmt = con.prepareStatement(Database.deletePostSql);
-                this.deletePostVisibilitiesStmt = con.prepareStatement(Database.deletePostVisibilitiesSql);
-
-                this.getPostsByCircleStmt = con.prepareStatement(Database.getPostsByCircleSql);
-                this.getPostsByUserStmt = con.prepareStatement(Database.getPostsByUserSql);
-                this.getPostsByTagStmt = con.prepareStatement(Database.getPostsByTagSql);
-                this.getUsersByTagStmt = con.prepareStatement(Database.getUsersByTagSql);
-                this.addPostTagStmt = con.prepareStatement(Database.addPostTagSql);
-                this.addUserTagStmt = con.prepareStatement(Database.addUserTagSql);
-                this.deletePostTagStmt = con.prepareStatement(Database.deletePostTagSql);
-                this.deleteUserTagStmt = con.prepareStatement(Database.deleteUserTagSql);
-                this.getPostTagsStmt = con.prepareStatement(Database.getPostTagsSql);
-                this.getUserTagsStmt = con.prepareStatement(Database.getUserTagsSql);
-
-                this.getPrivateMessageThreadsStmt = con.prepareStatement(Database.getPrivateMessageThreadsSql);
-
-                this.getActiveUsersStmt = con.prepareStatement(Database.getActiveUsersSql);
-                this.countInactiveUsersStmt = con.prepareStatement(Database.countInactiveUsersSql);
-                this.getTopPostsStmt = con.prepareStatement(Database.getTopPostsSql);
-                this.getMessageCountStmt = con.prepareStatement(Database.getMessageCountSql);
-                this.getReadCountStmt = con.prepareStatement(Database.getReadCountSql);
-                this.getReadCountForNewMessagesStmt = con.prepareStatement(Database.getReadCountForNewMessagesSql);
-
-                this.getTopTagDataStmt = con.prepareStatement(Database.getTopTagDataSql);
-                this.insertReportStmt = con.prepareStatement(Database.insertReportSql, new String[]{"tid"});
-                this.insertReportTagDataStmt = con.prepareStatement(Database.insertReportTagDataSql);
-                this.getReportsStmt = con.prepareStatement(Database.getReportsSql);
-                this.getReportsTagDataStmt = con.prepareStatement(Database.getReportsTagDataSql);
-
-                this.collectGarbage1Stmt = con.prepareStatement(Database.collectGarbage1Sql);
-
-                this.logPostReadStmt = con.prepareStatement(Database.logPostReadSql);
-                //this.XXXStmt = con.prepareStatement(Database.XXXSql);
-            } catch (Exception e) {
-                System.err.println("FATAL: Failed to set up database connection!");
-                e.printStackTrace();
-                System.exit(1);
+            this.con = DriverManager.getConnection(url, username, password);
+            synchronized (conList) {
+                conList.add(this.con);
             }
+
+            this.getTimeStmt = con.prepareStatement(Database.getTimeSql);
+            this.setTimeStaticStmt = con.prepareStatement(Database.setTimeStaticSql);
+            this.setTimeDynamicStmt = con.prepareStatement(Database.setTimeDynamicSql);
+            this.isTimeMovingStmt = con.prepareStatement(Database.isTimeMovingSql);
+
+            this.getUserStmt = con.prepareStatement(Database.getUserSql);
+            this.getUserByEmailStmt = con.prepareStatement(Database.getUserByEmailSql);
+            this.insertUserStmt = con.prepareStatement(Database.insertUserSql, new String[]{"hid"});
+            this.updateUserStmt = con.prepareStatement(Database.updateUserSql);
+            this.getFriendsStmt = con.prepareStatement(Database.getFriendsSql);
+            this.getPendingRequestsStmt = con.prepareStatement(Database.getPendingRequestsSql);
+            this.getActiveRequestsStmt = con.prepareStatement(Database.getActiveRequestsSql);
+            this.makeFriendsStmt = con.prepareStatement(Database.makeFriendsSql);
+            this.areFriendsStmt = con.prepareStatement(Database.areFriendsSql);
+            this.requestFriendsStmt = con.prepareStatement(Database.requestFriendsSql);
+            this.unrequestFriendsStmt = con.prepareStatement(Database.unrequestFriendsSql);
+            this.unfriendStmt = con.prepareStatement(Database.unfriendSql);
+
+            this.insertSessionStmt = con.prepareStatement(Database.insertSessionSql, new String[]{"sid"});
+            this.updateSessionStmt = con.prepareStatement(Database.updateSessionSql);
+            this.getSessionStmt = con.prepareStatement(Database.getSessionSql);
+            this.deleteSessionStmt = con.prepareStatement(Database.deleteSessionSql);
+
+            this.insertChatGroupStmt = con.prepareStatement(Database.insertChatGroupSql, new String[]{"gid"});
+            this.updateChatGroupStmt = con.prepareStatement(Database.updateChatGroupSql);
+            this.getChatGroupStmt = con.prepareStatement(Database.getChatGroupSql);
+            this.insertChatGroupMembershipStmt = con.prepareStatement(Database.insertChatGroupMembershipSql);
+            this.bootstrapNewGroupMemberStmt = con.prepareStatement(Database.bootstrapNewGroupMemberSql);
+            this.updateChatGroupMembershipStmt = con.prepareStatement(Database.updateChatGroupMembershipSql);
+            this.getChatGroupMembersStmt = con.prepareStatement(Database.getChatGroupMembersSql);
+            this.getChatGroupPendingMembersStmt = con.prepareStatement(Database.getChatGroupPendingMembersSql);
+            this.getChatGroupsForUserStmt = con.prepareStatement(Database.getChatGroupsForUserSql);
+            this.getChatGroupsPendingForUserStmt = con.prepareStatement(Database.getChatGroupsPendingForUserSql);
+            this.getChatGroupOwnerStmt = con.prepareStatement(Database.getChatGroupOwnerSql);
+
+            this.insertChatStmt = con.prepareStatement(Database.insertChatSql, new String[]{"cid"});
+            this.insertChatForGroupStmt = con.prepareStatement(Database.insertChatForGroupSql);
+            this.deleteChatSenderStmt = con.prepareStatement(Database.deleteChatSenderSql);
+            this.deleteChatReceiverStmt = con.prepareStatement(Database.deleteChatReceiverSql);
+            this.getChatsStmt = con.prepareStatement(Database.getChatsSql);
+            this.getChatsForGroupStmt = con.prepareStatement(Database.getChatsForGroupSql);
+
+            this.insertPostStmt = con.prepareStatement(Database.insertPostSql, new String[]{"pid"});
+            this.updatePostStmt = con.prepareStatement(Database.updatePostSql);
+            this.makePostVisibleStmt = con.prepareStatement(Database.makePostVisibleSql);
+            this.getPostStmt = con.prepareStatement(Database.getPostSql);
+            this.deletePostStmt = con.prepareStatement(Database.deletePostSql);
+            this.deletePostVisibilitiesStmt = con.prepareStatement(Database.deletePostVisibilitiesSql);
+
+            this.getPostsByCircleStmt = con.prepareStatement(Database.getPostsByCircleSql);
+            this.getPostsByUserStmt = con.prepareStatement(Database.getPostsByUserSql);
+            this.getPostsByTagStmt = con.prepareStatement(Database.getPostsByTagSql);
+            this.getUsersByTagStmt = con.prepareStatement(Database.getUsersByTagSql);
+            this.addPostTagStmt = con.prepareStatement(Database.addPostTagSql);
+            this.addUserTagStmt = con.prepareStatement(Database.addUserTagSql);
+            this.deletePostTagStmt = con.prepareStatement(Database.deletePostTagSql);
+            this.deleteUserTagStmt = con.prepareStatement(Database.deleteUserTagSql);
+            this.getPostTagsStmt = con.prepareStatement(Database.getPostTagsSql);
+            this.getUserTagsStmt = con.prepareStatement(Database.getUserTagsSql);
+
+            this.getPrivateMessageThreadsStmt = con.prepareStatement(Database.getPrivateMessageThreadsSql);
+
+            this.getActiveUsersStmt = con.prepareStatement(Database.getActiveUsersSql);
+            this.countInactiveUsersStmt = con.prepareStatement(Database.countInactiveUsersSql);
+            this.getTopPostsStmt = con.prepareStatement(Database.getTopPostsSql);
+            this.getMessageCountStmt = con.prepareStatement(Database.getMessageCountSql);
+            this.getReadCountStmt = con.prepareStatement(Database.getReadCountSql);
+            this.getReadCountForNewMessagesStmt = con.prepareStatement(Database.getReadCountForNewMessagesSql);
+
+            this.getTopTagDataStmt = con.prepareStatement(Database.getTopTagDataSql);
+            this.insertReportStmt = con.prepareStatement(Database.insertReportSql, new String[]{"tid"});
+            this.insertReportTagDataStmt = con.prepareStatement(Database.insertReportTagDataSql);
+            this.getReportsStmt = con.prepareStatement(Database.getReportsSql);
+            this.getReportsTagDataStmt = con.prepareStatement(Database.getReportsTagDataSql);
+
+            this.collectGarbage1Stmt = con.prepareStatement(Database.collectGarbage1Sql);
+
+            this.logPostReadStmt = con.prepareStatement(Database.logPostReadSql);
+            //this.XXXStmt = con.prepareStatement(Database.XXXSql);
+        } catch (Exception e) {
+            System.err.println("FATAL: Failed to set up database connection!");
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 
@@ -132,7 +121,6 @@ public class Database {
     private static String getTimeSql = "SELECT getTime()";
     private PreparedStatement getTimeStmt;
     public Date getTime() {
-        if (!ONLINE) return new Date();
         try {
             ResultSet rs = this.getTimeStmt.executeQuery();
             rs.next();
@@ -196,50 +184,34 @@ public class Database {
     private static String getUserSql = "SELECT email, name, phone, passwordHash, screenname, isManager FROM Users WHERE hid=?";
     private PreparedStatement getUserStmt;
     public UsersEntity getUser(int hid) {
-        if (ONLINE) {
-            try {
-                this.getUserStmt.setInt(1, hid);
-                ResultSet rs = this.getUserStmt.executeQuery();
-                if (rs.next()) {
-                    return new UsersEntity(hid, rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6) != 0);
-                } else {
-                    return null;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
-            }
-        } else {
-            if (hid == 1) {
-                return new UsersEntity(1, "andrew@andrewdutcher", "Andrew Dutcher", "8056983068", "B9750E2AD66B77612B76F7739A930B5B43D7E54A17B0BB3F14933EF2D268D3FC", "dutcher", true);
+        try {
+            this.getUserStmt.setInt(1, hid);
+            ResultSet rs = this.getUserStmt.executeQuery();
+            if (rs.next()) {
+                return new UsersEntity(hid, rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6) != 0);
             } else {
                 return null;
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
     private static String getUserByEmailSql = "SELECT hid, name, phone, passwordHash, screenname, isManager FROM Users WHERE email=?";
     private PreparedStatement getUserByEmailStmt;
     public UsersEntity getUserByEmail(String email) {
-        if (ONLINE) {
-            try {
-                this.getUserByEmailStmt.setString(1, email);
-                ResultSet rs = this.getUserByEmailStmt.executeQuery();
-                if (rs.next()) {
-                    return new UsersEntity(rs.getInt(1), email, rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6) != 0);
-                } else {
-                    return null;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
-            }
-        } else {
-            if (email.equals("andrew@andrewdutcher")) {
-                return new UsersEntity(1, "andrew@andrewdutcher", "Andrew Dutcher", "8056983068", "B9750E2AD66B77612B76F7739A930B5B43D7E54A17B0BB3F14933EF2D268D3FC", "dutcher", true);
+        try {
+            this.getUserByEmailStmt.setString(1, email);
+            ResultSet rs = this.getUserByEmailStmt.executeQuery();
+            if (rs.next()) {
+                return new UsersEntity(rs.getInt(1), email, rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6) != 0);
             } else {
                 return null;
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -291,93 +263,51 @@ public class Database {
     private static String getFriendsSql = "SELECT hid, email, name, phone, passwordHash, screenname, isManager FROM Users join Friendships on Friendships.up = Users.hid WHERE Friendships.down=?";
     private PreparedStatement getFriendsStmt;
     public ArrayList<UsersEntity> getFriends(int hid) {
-        if (ONLINE) {
-            try {
-                this.getFriendsStmt.setInt(1, hid);
-                ResultSet rs = this.getFriendsStmt.executeQuery();
-                ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
-                while (rs.next()) {
-                    out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
-                }
-                return out;
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
+        try {
+            this.getFriendsStmt.setInt(1, hid);
+            ResultSet rs = this.getFriendsStmt.executeQuery();
+            ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
+            while (rs.next()) {
+                out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
             }
-        } else {
-            if (hid == 1) { //andrew
-                return new ArrayList<UsersEntity>(Arrays.asList(MOCK_JUDYANN, MOCK_BRANDON));
-            } else if (hid == 2) { //brandon
-                return new ArrayList<UsersEntity>(Arrays.asList(MOCK_ANDREW, MOCK_BOB));
-            } else if (hid == 3) { //judyann
-                return new ArrayList<UsersEntity>(Arrays.asList(MOCK_ANDREW, MOCK_BOB));
-            } else if (hid == 4) { //bob
-                return new ArrayList<UsersEntity>(Arrays.asList(MOCK_JUDYANN, MOCK_BRANDON));
-            } else {
-                return null;
-            }
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
     private static String getPendingRequestsSql = "SELECT Users.hid, email, name, phone, passwordHash, screenname, isManager FROM Users join FriendRequests on FriendRequests.requestee = Users.hid WHERE FriendRequests.requester=?";
     private PreparedStatement getPendingRequestsStmt;
     public ArrayList<UsersEntity> getPendingRequests(int hid) {
-        if (ONLINE) {
-            try {
-                this.getPendingRequestsStmt.setInt(1, hid);
-                ResultSet rs = this.getPendingRequestsStmt.executeQuery();
-                ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
-                while (rs.next()) {
-                    out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
-                }
-                return out;
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
+        try {
+            this.getPendingRequestsStmt.setInt(1, hid);
+            ResultSet rs = this.getPendingRequestsStmt.executeQuery();
+            ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
+            while (rs.next()) {
+                out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
             }
-        } else {
-            if (hid == 1) { //andrew
-                return new ArrayList<UsersEntity>();
-            } else if (hid == 2) { //brandon
-                return new ArrayList<UsersEntity>();
-            } else if (hid == 3) { //judyann
-                return new ArrayList<UsersEntity>();
-            } else if (hid == 4) { //bob
-                return new ArrayList<UsersEntity>();
-            } else {
-                return null;
-            }
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
     private static String getActiveRequestsSql = "SELECT Users.hid, email, name, phone, passwordHash, screenname, isManager FROM Users join FriendRequests on FriendRequests.requester = Users.hid WHERE FriendRequests.requestee=?";
     private PreparedStatement getActiveRequestsStmt;
     public ArrayList<UsersEntity> getActiveRequests(int hid) {
-        if (ONLINE) {
-            try {
-                this.getActiveRequestsStmt.setInt(1, hid);
-                ResultSet rs = this.getActiveRequestsStmt.executeQuery();
-                ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
-                while (rs.next()) {
-                    out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
-                }
-                return out;
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
+        try {
+            this.getActiveRequestsStmt.setInt(1, hid);
+            ResultSet rs = this.getActiveRequestsStmt.executeQuery();
+            ArrayList<UsersEntity> out = new ArrayList<UsersEntity>();
+            while (rs.next()) {
+                out.add(new UsersEntity(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getInt(7) != 0));
             }
-        } else {
-            if (hid == 1) { //andrew
-                return new ArrayList<UsersEntity>();
-            } else if (hid == 2) { //brandon
-                return new ArrayList<UsersEntity>();
-            } else if (hid == 3) { //judyann
-                return new ArrayList<UsersEntity>();
-            } else if (hid == 4) { //bob
-                return new ArrayList<UsersEntity>();
-            } else {
-                return null;
-            }
+            return out;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -400,18 +330,14 @@ public class Database {
     private static String areFriendsSql = "SELECT 1 FROM Friendships WHERE up=? AND down=?";
     private PreparedStatement areFriendsStmt;
     public boolean areFriends(int hid1, int hid2) {
-        if (ONLINE) {
-            try {
-                this.areFriendsStmt.setInt(1, hid1);
-                this.areFriendsStmt.setInt(2, hid2);
-                ResultSet rs = this.areFriendsStmt.executeQuery();
-                return rs.next();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return false;
-            }
-        } else {
-            return getFriends(hid1).contains(getUser(hid2));
+        try {
+            this.areFriendsStmt.setInt(1, hid1);
+            this.areFriendsStmt.setInt(2, hid2);
+            ResultSet rs = this.areFriendsStmt.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -462,24 +388,20 @@ public class Database {
     private static String insertSessionSql = "INSERT INTO Sessions (sid, token, hid, isManaging) VALUES (NEXTVAL('SeqSid'), ?, ?, ?)";
     private PreparedStatement insertSessionStmt;
     public Integer insertSession(String token, int hid, boolean isManaging) {
-        if (ONLINE) {
-            try {
-                int isManagingInt = 0;
-                if (isManaging) isManagingInt = 1;
+        try {
+            int isManagingInt = 0;
+            if (isManaging) isManagingInt = 1;
 
-                this.insertSessionStmt.setString(1, token);
-                this.insertSessionStmt.setInt(2, hid);
-                this.insertSessionStmt.setInt(3, isManagingInt);
-                this.insertSessionStmt.executeUpdate();
-                ResultSet rs = this.insertSessionStmt.getGeneratedKeys();
-                rs.next();
-                return rs.getInt(1);
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
-            }
-        } else {
-            return 1;
+            this.insertSessionStmt.setString(1, token);
+            this.insertSessionStmt.setInt(2, hid);
+            this.insertSessionStmt.setInt(3, isManagingInt);
+            this.insertSessionStmt.executeUpdate();
+            ResultSet rs = this.insertSessionStmt.getGeneratedKeys();
+            rs.next();
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -505,28 +427,23 @@ public class Database {
     private static String getSessionSql = "SELECT sid, hid, isManaging FROM Sessions WHERE token=?";
     private PreparedStatement getSessionStmt;
     public SessionsEntity getSession(String token) {
-        if (ONLINE) {
-            try {
-                this.getSessionStmt.setString(1, token);
-                ResultSet rs = this.getSessionStmt.executeQuery();
-                if (rs.next()) {
-                    return new SessionsEntity(rs.getInt(1), token, rs.getInt(2), rs.getInt(3) != 0);
-                } else {
-                    return null;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
+        try {
+            this.getSessionStmt.setString(1, token);
+            ResultSet rs = this.getSessionStmt.executeQuery();
+            if (rs.next()) {
+                return new SessionsEntity(rs.getInt(1), token, rs.getInt(2), rs.getInt(3) != 0);
+            } else {
                 return null;
             }
-        } else {
-            return new SessionsEntity(1, token, MOCK_LOGIN_ID, false);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
     private static String deleteSessionSql = "DELETE FROM Sessions where sid=?";
     private PreparedStatement deleteSessionStmt;
     public boolean deleteSession(int sid) {
-        if (!ONLINE) return true;
         try {
             this.deleteSessionStmt.setInt(1, sid);
             this.deleteSessionStmt.executeUpdate();
@@ -827,7 +744,6 @@ public class Database {
     private static String insertPostSql = "INSERT INTO Posts (pid, author, text, timestamp, isPublic) VALUES (NEXTVAL('SeqPid'), ?, ?, getTime(), ?)";
     private PreparedStatement insertPostStmt;
     public Integer insertPost(int author, String text, boolean isPublic) {
-        if (!ONLINE) return 1;
         try {
             int isPublicInt = 0;
             if (isPublic) isPublicInt = 1;
@@ -1052,7 +968,6 @@ public class Database {
     private static String addPostTagSql = "INSERT INTO PostTags (pid, tagText) VALUES (?, ?)";
     private PreparedStatement addPostTagStmt;
     public boolean addPostTag(int pid, String tagText) {
-        if (!ONLINE) return true;
         try {
             this.addPostTagStmt.setInt(1, pid);
             this.addPostTagStmt.setString(2, tagText);
@@ -1109,58 +1024,36 @@ public class Database {
     private static String getUserTagsSql = "SELECT tagText FROM UserTags where hid=?";
     private PreparedStatement getUserTagsStmt;
     public ArrayList<String> getUserTags(int hid) {
-        if (ONLINE) {
-            try {
-                this.getUserTagsStmt.setInt(1, hid);
-                ResultSet rs = this.getUserTagsStmt.executeQuery();
+        try {
+            this.getUserTagsStmt.setInt(1, hid);
+            ResultSet rs = this.getUserTagsStmt.executeQuery();
 
-                ArrayList<String> out = new ArrayList<String>();
-                while (rs.next()) {
-                    out.add(rs.getString(1));
-                }
-                return out;
-            } catch (SQLException e) {
-                System.err.println(e);
-                return null;
+            ArrayList<String> out = new ArrayList<String>();
+            while (rs.next()) {
+                out.add(rs.getString(1));
             }
-        } else {
-            if (hid == 1) { // andrew
-                return new ArrayList<String>(Arrays.asList("puns", "ducks", "hats", "gender", "boys"));
-            } else if (hid == 2) { // brandon
-                return new ArrayList<String>(Arrays.asList("hats", "games", "anime"));
-            } else if (hid == 3) { // judyann
-                return new ArrayList<String>(Arrays.asList("graphic design", "boys"));
-            } else if (hid == 4) { // bob
-                return new ArrayList<String>(Arrays.asList("hats", "graphic design"));
-            } else {
-                return new ArrayList<String>();
-            }
+            return out;
+        } catch (SQLException e) {
+            System.err.println(e);
+            return null;
         }
     }
 
     private static String getPostTagsSql = "SELECT tagText FROM PostTags where pid=?";
     private PreparedStatement getPostTagsStmt;
     public ArrayList<String> getPostTags(int pid) {
-        if (ONLINE) {
-            try {
-                this.getPostTagsStmt.setInt(1, pid);
-                ResultSet rs = this.getPostTagsStmt.executeQuery();
+        try {
+            this.getPostTagsStmt.setInt(1, pid);
+            ResultSet rs = this.getPostTagsStmt.executeQuery();
 
-                ArrayList<String> out = new ArrayList<String>();
-                while (rs.next()) {
-                    out.add(rs.getString(1));
-                }
-                return out;
-            } catch (SQLException e) {
-                System.err.println(e);
-                return null;
+            ArrayList<String> out = new ArrayList<String>();
+            while (rs.next()) {
+                out.add(rs.getString(1));
             }
-        } else {
-            if (pid == 1) {
-                return new ArrayList<String>(Arrays.asList("random personal warblings"));
-            } else {
-                return new ArrayList<String>();
-            }
+            return out;
+        } catch (SQLException e) {
+            System.err.println(e);
+            return null;
         }
     }
 
