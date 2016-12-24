@@ -44,7 +44,7 @@ public class Tupperware {
             }
 
             if (t.currentSession != null) {
-                Tupperware.writeToken(t.currentSession.token);
+                //Tupperware.writeToken(t.currentSession.token);
                 t.mainMenu();
             }
         } finally {

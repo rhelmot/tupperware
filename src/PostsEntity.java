@@ -73,14 +73,9 @@ public class PostsEntity extends Entity {
             }
         }
 
-        PostsEntity out = new PostsEntity(null, author.hid, text, Database.i().getTime(), true);
+        PostsEntity out = new PostsEntity(null, author.hid, text, Database.i().getTime(), false);
         if (out.save()) {
-            if (audience == null) {
-                if (!Database.i().makePostVisible(out.pid, null)) {
-                    // ???
-                    return null;
-                }
-            } else {
+            if (audience != null && audience.length > 0) {
                 for (UsersEntity viewer : audience) {
                     if (!Database.i().makePostVisible(out.pid, viewer.hid)) {
                         // ???
@@ -88,7 +83,7 @@ public class PostsEntity extends Entity {
                     }
                 }
                 if (!Database.i().makePostVisible(out.pid, author.hid)) {
-                    // ...
+                    // ???
                     return null;
                 }
             }
@@ -138,7 +133,7 @@ public class PostsEntity extends Entity {
     }
 
     public boolean delete() {
-        return Database.i().deletePost(this.pid);
+        return Database.i().deletePost(this.pid) && Database.i().deletePostVisibilities(this.pid);
     }
 
     public ArrayList<String> getTags() {

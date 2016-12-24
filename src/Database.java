@@ -909,33 +909,41 @@ public class Database {
         }
     }
 
+    private static String deletePostVisibilitiesSql = "DELETE FROM PostVisibilities where pid=?";
+    private PreparedStatement deletePostVisibilitiesStmt;
+    public boolean deletePostVisibilities(int pid) {
+        try {
+            deletePostVisibilitiesStmt.setInt(1, pid);
+            deletePostVisibilitiesStmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private static String getPostsByCircleSql =
 "SELECT Posts.pid, author, text, timestamp, isPublic                            " +
-"    FROM Posts JOIN (SELECT pid, hid FROM PostVisibilities WHERE hid=? OR hid IS NULL) PV ON PV.pid=Posts.pid    " +
+"    FROM Posts LEFT JOIN PostVisibilities ON PostVisibilities.pid=Posts.pid    " +
 "    WHERE (                                                                    " +
-"            author=? OR                                                        " +
-"            (                                                                  " +
-"                hid=? OR                                                       " +
-"                (hid is NULL                                                   " +
-"                    AND (isPublic=0 OR 0!=?)                                   " +
-"                    AND EXISTS(SELECT left, right                              " +
-"                        FROM Friendships                                       " +
-"                        WHERE left=author                                      " +
-"                            AND right=?                                        " +
-"                    )                                                          " +
-"                )                                                              " +
-"            )                                                                  " +
+"            (hid=? OR hid IS NULL) AND                                         " +
+"            (isPublic=0 OR 0!=?) AND                                           " +
+"            (author=? OR                                                       " +
+"                EXISTS(SELECT left, right                                      " +
+"                    FROM Friendships                                           " +
+"                    WHERE left=author                                          " +
+"                        AND right=?)                                           " +
+"             )                                                                 " +
 "        ) AND Posts.pid<?                                                      " +
-"    ORDER BY timestamp DESC, Posts.pid DESC                                                    ";
+"    ORDER BY timestamp DESC, Posts.pid DESC                                    ";
     private PreparedStatement getPostsByCircleStmt;
     public ArrayList<PostsEntity> getPostsByCircle(int hid, boolean includePublic, int index, int count) {
         try {
             this.getPostsByCircleStmt.setInt(1, hid);
-            this.getPostsByCircleStmt.setInt(2, hid);
+            this.getPostsByCircleStmt.setInt(2, includePublic ? 1 : 0);
             this.getPostsByCircleStmt.setInt(3, hid);
-            this.getPostsByCircleStmt.setInt(4, includePublic ? 1 : 0);
-            this.getPostsByCircleStmt.setInt(5, hid);
-            this.getPostsByCircleStmt.setInt(6, index);
+            this.getPostsByCircleStmt.setInt(4, hid);
+            this.getPostsByCircleStmt.setInt(5, index);
             ResultSet rs = this.getPostsByCircleStmt.executeQuery();
 
             ArrayList<PostsEntity> out = new ArrayList<PostsEntity>();
@@ -956,28 +964,29 @@ public class Database {
 "SELECT Posts.pid, author, text, timestamp, isPublic                            " +
 "    FROM Posts LEFT JOIN PostVisibilities ON PostVisibilities.pid=Posts.pid    " +
 "    WHERE (                                                                    " +
-"            author=? AND                                                       " +
+"            author=? AND (hid=? OR hid IS NULL) AND                            " +
 "            (                                                                  " +
-"                hid=? OR                                                       " +
+"                (isPublic=1 AND 0!=?) OR                                       " +
 "                author=? OR                                                    " +
-"                (hid is NULL                                                   " +
-"                    AND (isPublic=0 OR 0!=?)                                   " +
-"                    AND EXISTS(SELECT left, right                              " +
-"                        FROM Friendships                                       " +
-"                        WHERE left=author                                      " +
-"                            AND right=?                                        " +
-"                    )                                                          " +
-"                )                                                              " +
-"            )                                                                  " +
+"                EXISTS(SELECT left, right                                      " +
+"                    FROM Friendships                                           " +
+"                    WHERE left=author                                          " +
+"                        AND right=?)                                           " +
+"             )                                                                 " +
 "        ) AND Posts.pid<?                                                      " +
-"    ORDER BY timestamp DESC, Posts.pid DESC                                                    ";
+"    ORDER BY timestamp DESC, Posts.pid DESC                                    ";
+    // Start with exactly one row per post
+    // Conditions for viewing a post, given that it's either open-view or you have explicit permission:
+    // 1) it's public and we want to see public posts, or
+    // 2) you wrote it, or
+    // 3) you're friends with the author
     private PreparedStatement getPostsByUserStmt;
     public ArrayList<PostsEntity> getPostsByUser(int author, int viewer, boolean includePublic, int index, int count) {
         try {
             this.getPostsByUserStmt.setInt(1, author);
             this.getPostsByUserStmt.setInt(2, viewer);
-            this.getPostsByUserStmt.setInt(3, viewer);
-            this.getPostsByUserStmt.setInt(4, includePublic ? 1 : 0);
+            this.getPostsByUserStmt.setInt(3, includePublic ? 1 : 0);
+            this.getPostsByUserStmt.setInt(4, viewer);
             this.getPostsByUserStmt.setInt(5, viewer);
             this.getPostsByUserStmt.setInt(6, index);
             ResultSet rs = this.getPostsByUserStmt.executeQuery();

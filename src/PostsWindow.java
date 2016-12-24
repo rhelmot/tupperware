@@ -17,6 +17,8 @@ public abstract class PostsWindow extends ParametrizedWindow {
     } 
 
     public void construct() {
+        lastLoaded = null;
+
         loadMoreDummy = new Button("Load More Posts", new Runnable() {
             @Override
             public void run() {
