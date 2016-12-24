@@ -29,4 +29,4 @@ teardown:
 	./scripts/sql ./scripts/teardown.sql
 
 clean:
-	rm -rf bin/*.class bin/com
+	find -name '*.class' | xargs rm -f
