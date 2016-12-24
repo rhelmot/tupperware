@@ -12,9 +12,6 @@ $ make load             # set up the database and load the demo data
 $ make run              # run that bad boy
 ```
 
-Move with the arrow keys, submit with the enter key. Once logged in, hit the
-help button to learn to use the window management system.
-
 ## Source code
 
 All source code can be found in the src/ folder.
